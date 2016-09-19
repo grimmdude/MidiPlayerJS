@@ -1,6 +1,9 @@
 var Constants = {
-	// Event structures
-	events: [
+	// Event signatures
+	noteEvents: [
+		
+	],
+	metaEvents: [
 
 	]
 

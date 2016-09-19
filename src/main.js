@@ -7,10 +7,10 @@ class Main {
 		this.buffer;
 		this.division;
 		this.setIntervalId;
-		this.delta;
 		this.currentTime;
 		this.tracks = [];
 		this.tempo = 120;
+		this.tick = 0;
 	}
 
 	loadFile(path) {
@@ -70,41 +70,75 @@ class Main {
 	 */
 	handleEvent(track, eventPointer) {
 		// Parse delta value
-		var deltaHex = this.byteToHex(track[this.pointer]);
 		var currentByte = track[this.pointer];
-		var counter = 1;
+		var vlvByteCount = 1;
 
+		// Get bytes of VLV
 		// http://www.ccarh.org/courses/253/handout/vlv/
 		// If byte is greater or equal to 80h (128 decimal) then the next byte 
 	    // is also part of the VLV,
 	   	// else byte is the last byte in a VLV.
 		while (currentByte >= 128) {
-			currentByte = track[this.pointer + counter];
-			deltaHex += this.byteToHex(currentByte);
-			counter++;
+			currentByte = track[this.pointer + vlvByteCount];
+			vlvByteCount++;
 		}
 
-		console.log(deltaHex);
-
-		var eventSig = track[this.pointer + counter];
-		console.log('Event delta: ' + this.hexToNumber(deltaHex));
-		console.log('Event sig: ' + this.byteToHex(eventSig));
-		console.log();
+		var delta = this.readVarInt(track.slice(this.pointer, this.pointer + vlvByteCount));
+		var eventSig = track[this.pointer + vlvByteCount];
 
 		// Skip meta events for now (except for end of track)
 		if (eventSig == 255) {
+			console.log('Event sig: ' + this.byteToHex(eventSig));
 			// Advance pointer
-			var length = track[this.pointer + counter + 2];
-			console.log('length: ' + length);
+			var length = track[this.pointer + vlvByteCount + 2];
+			//console.log('length: ' + length);
 			this.pointer += length + 4;
 		} else {
 			// Note event
-			this.pointer += counter + 3;
+			if (this.tick >= delta) {
+				console.log('Event: ');
+				console.log(track.slice(this.pointer + vlvByteCount, this.pointer + vlvByteCount + 3));
+				this.pointer += vlvByteCount + 3;
+			}
 		}
+	}
 
-		// Need a function that can take a start index and parse next event data
+	/* read a MIDI-style variable-length integer
+		(big-endian value in groups of 7 bits,
+		with top bit set to signify that another byte follows)
+	*/
+	// Need to update this function to work with an array of bytes making up a VLV value.
+	readVarIntBak(number) {
+		var result = 0;
+		while (true) {
+			var b = number;
+			if (b & 0x80) {
+				result += (b & 0x7f);
+				result <<= 7;
+			} else {
+				/* b is the last byte */
+				return result + b;
+			}
+		}
+	}
 
-		//clearInterval(this.setIntervalId);
+	// Need to update this function to work with an array of bytes making up a VLV value.
+	readVarInt(byteArray) {
+		//console.log(byteArray)
+		var result = 0;
+		byteArray.forEach(function(number) {
+			var b = number;
+			if (b & 0x80) {
+				result += (b & 0x7f);
+				result <<= 7;
+			} else {
+				/* b is the last byte */
+				result += b;
+			}
+		});
+
+		//console.log('vlv: '+result);
+		return result;
 	}
 
 	play() {
@@ -114,9 +148,9 @@ class Main {
 		var me = this;
 
 		this.setIntervalId = setInterval(function() {
-			me.delta = ((new Date).getTime() - me.startTime) / 1000 * me.division;
+			me.tick = Math.round(((new Date).getTime() - me.startTime) / 1000 * me.division);
 			
-			//console.log(me.delta);
+			//console.log(me.tick);
 			// Handle next event
 			if (me.tracks[0][me.pointer + 1] == 255 && me.tracks[0][me.pointer + 2] == 47 && me.tracks[0][me.pointer + 3] == 0) {
 				clearInterval(me.setIntervalId);
@@ -124,13 +158,8 @@ class Main {
 			} else {
 				me.handleEvent(me.tracks[0], me.pointer);
 			}
-
-			//me.pointer ++;
-			//if (me.pointer == me.buffer.length) clearInterval(me.setIntervalId);
 		
 		}, 1);
-
-		//clearInterval(this.setIntervalId);
 
 		return this;
 	}
@@ -164,6 +193,10 @@ class Main {
 		});
 
 		return letters.join('');
+	}
+
+	decToBinary(dec) {
+    	return (dec >>> 0).toString(2);
 	}
 
 	emitEvent() {
