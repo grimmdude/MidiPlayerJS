@@ -107,7 +107,6 @@ class Main {
 		(big-endian value in groups of 7 bits,
 		with top bit set to signify that another byte follows)
 	*/
-	// Need to update this function to work with an array of bytes making up a VLV value.
 	readVarIntBak(number) {
 		var result = 0;
 		while (true) {
@@ -124,7 +123,6 @@ class Main {
 
 	// Need to update this function to work with an array of bytes making up a VLV value.
 	readVarInt(byteArray) {
-		//console.log(byteArray)
 		var result = 0;
 		byteArray.forEach(function(number) {
 			var b = number;
@@ -137,7 +135,6 @@ class Main {
 			}
 		});
 
-		//console.log('vlv: '+result);
 		return result;
 	}
 
