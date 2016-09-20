@@ -1,4 +1,4 @@
-&#9836; MidiWriterJS
+&#9836; MidiPlayerJS
 ===============
 Getting Started
 ------------
