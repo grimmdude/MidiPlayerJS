@@ -18,7 +18,7 @@ class Utils {
 	}
 
 	static bytesToNumber(byteArray) {
-		return this.hexToNumber(Utils.bytesToHex(byteArray));
+		return Utils.hexToNumber(Utils.bytesToHex(byteArray));
 	}
 
 	static bytesToLetters(byteArray) {

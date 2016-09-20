@@ -11,6 +11,8 @@ class Player {
 		this.tracks = [];
 		this.tempo = 120;
 		this.tick = 0;
+		this.lastStatus;
+		this.lastTick = null;
 	}
 
 	loadFile(path) {
@@ -107,28 +109,47 @@ class Player {
 					break;
 			}
 
-			console.log('Event sig: ' + Utils.byteToHex(eventSig));
+			console.log('Meta Event');
 			// Advance pointer
 			var length = track[this.pointer + vlvByteCount + 2];
 			//console.log('length: ' + length);
 			this.pointer += length + 4;
 		} else {
+
 			// Note event
-			if (this.tick >= delta) {
-				console.log('Event: ');
-				console.log(track.slice(this.pointer + vlvByteCount, this.pointer + vlvByteCount + 3));
-				this.emitEvent();
-				this.pointer += vlvByteCount + 3;
+			if ((this.lastTick === null && this.tick >= delta) || this.tick - this.lastTick >= delta ) {
+				this.lastTick = this.tick;
+				if (track[this.pointer + vlvByteCount] < 0x80) { // Running status
+					console.log('running status');
+					this.emitEvent(track.slice(this.pointer + vlvByteCount, this.pointer + vlvByteCount + 2));
+					this.pointer += vlvByteCount + 2;
+
+				} else {
+					this.lastStatus = track[this.pointer + vlvByteCount];
+
+					if (track[this.pointer + vlvByteCount] >= 192) { // program change
+						this.emitEvent(track.slice(this.pointer + vlvByteCount, this.pointer + vlvByteCount + 2));
+						this.pointer += vlvByteCount + 2;
+
+					} else {
+						this.emitEvent(track.slice(this.pointer + vlvByteCount, this.pointer + vlvByteCount + 3));
+						this.pointer += vlvByteCount + 3;
+					}
+					
+				}
+
 			}
 		}
 	}
 
 
 	play() {
+		// Initialize
 		this.tracks = this.getTracks();
 		this.division = this.getDivision();
 		this.startTime = (new Date).getTime();
 		
+		// Start play loop
 		var me = this;
 		this.setIntervalId = setInterval(function() {
 			me.tick = Math.round(((new Date).getTime() - me.startTime) / 1000 * me.division);
@@ -147,8 +168,8 @@ class Player {
 		return this;
 	}
 
-	emitEvent() {
-		//console.log({'hi':true});
+	emitEvent(event) {
+		console.log(event);
 	}
 
 }
