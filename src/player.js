@@ -48,17 +48,15 @@ class Player {
 	// Parses out tracks and places them in this.tracks
 	getTracks() {
 		var tracks = [];
-		var me = this;
 
 		this.buffer.forEach(function(byte, index) {
-			if (Utils.bytesToLetters(me.buffer.slice(index, index + 4)) == 'MTrk') {
-				var trackLength = Utils.bytesToNumber(me.buffer.slice(index + 4, index + 8));
-				tracks.push(me.buffer.slice(index + 8, index + 8 + trackLength));
+			if (Utils.bytesToLetters(this.buffer.slice(index, index + 4)) == 'MTrk') {
+				var trackLength = Utils.bytesToNumber(this.buffer.slice(index + 4, index + 8));
+				tracks.push(this.buffer.slice(index + 8, index + 8 + trackLength));
 			}
-		});
+		}, this);
 
 		return tracks;
-
 	}
 
 	getDivision() {

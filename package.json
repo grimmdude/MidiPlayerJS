@@ -1,8 +1,8 @@
 {
-  "name": "midi-parser-js",
+  "name": "midi-player-js",
   "version": "1.0.0",
-  "description": "A library to parse MIDI files",
-  "main": "index.js",
+  "description": "A javascript library to play MIDI files",
+  "main": "build/index.js",
   "scripts": {
     "test": "mocha"
   },
