@@ -68,9 +68,8 @@ class Player {
 	/**
 	 * Handles event within a given track starting at specified index
 	 * @param track
-	 * @param eventPointer
 	 */
-	handleEvent(track, eventPointer) {
+	handleEvent(track) {
 		// Parse delta value
 		var currentByte = track[this.pointer];
 		var vlvByteCount = 1;
@@ -152,20 +151,23 @@ class Player {
 		// Start play loop
 		var me = this;
 		this.setIntervalId = setInterval(function() {
-			me.tick = Math.round(((new Date).getTime() - me.startTime) / 1000 * me.division);
-			
-			//console.log(me.tick);
+			me.tick = me.getCurrentTick();
+
 			// Handle next event
 			if (me.tracks[0][me.pointer + 1] == 255 && me.tracks[0][me.pointer + 2] == 47 && me.tracks[0][me.pointer + 3] == 0) {
 				clearInterval(me.setIntervalId);
 
 			} else {
-				me.handleEvent(me.tracks[0], me.pointer);
+				me.handleEvent(me.tracks[0]);
 			}
 		
 		}, 1);
 
 		return this;
+	}
+
+	getCurrentTick() {
+		return Math.round(((new Date).getTime() - this.startTime) / 1000 * (this.division * (this.tempo / 60)));
 	}
 
 	emitEvent(event) {
