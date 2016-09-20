@@ -1,6 +1,6 @@
 var fs = require('fs');
 
-class Main {
+class Player {
 	constructor() {
 		this.startTime = 0;
 		this.pointer = 0;
@@ -25,7 +25,7 @@ class Main {
 
 	// First four bytes should be MThd
 	validate() {
-		return this.bytesToLetters(this.buffer.slice(0, 4)) === 'MThd';
+		return Utils.bytesToLetters(this.buffer.slice(0, 4)) === 'MThd';
 	}
 
 	getLength() {
@@ -36,31 +36,31 @@ class Main {
 	}
 
 	getFormat() {
-		return this.bytesToNumber(this.buffer.slice(8, 10));
+		return Utils.bytesToNumber(this.buffer.slice(8, 10));
 	}
 
 	getTrackCount() {
-		return this.bytesToNumber(this.buffer.slice(10, 12));
+		return Utils.bytesToNumber(this.buffer.slice(10, 12));
 	}
 
 	// Parses out tracks and places them in this.tracks
 	getTracks() {
-		this.tracks = [];
+		var tracks = [];
 		var me = this;
 
 		this.buffer.forEach(function(byte, index) {
-			if (me.bytesToLetters(me.buffer.slice(index, index + 4)) == 'MTrk') {
-				var trackLength = me.bytesToNumber(me.buffer.slice(index + 4, index + 8));
-				me.tracks.push(me.buffer.slice(index + 8, index + 8 + trackLength));
+			if (Utils.bytesToLetters(me.buffer.slice(index, index + 4)) == 'MTrk') {
+				var trackLength = Utils.bytesToNumber(me.buffer.slice(index + 4, index + 8));
+				tracks.push(me.buffer.slice(index + 8, index + 8 + trackLength));
 			}
 		});
 
-		return this.tracks;
+		return tracks;
 
 	}
 
 	getDivision() {
-		return this.bytesToNumber(this.buffer.slice(12, 14));
+		return Utils.bytesToNumber(this.buffer.slice(12, 14));
 	}
 
 	/**
@@ -83,12 +83,31 @@ class Main {
 			vlvByteCount++;
 		}
 
-		var delta = this.readVarInt(track.slice(this.pointer, this.pointer + vlvByteCount));
+		var delta = Utils.readVarInt(track.slice(this.pointer, this.pointer + vlvByteCount));
 		var eventSig = track[this.pointer + vlvByteCount];
 
 		// Skip meta events for now (except for end of track)
-		if (eventSig == 255) {
-			console.log('Event sig: ' + this.byteToHex(eventSig));
+		if (eventSig == 0xff) {
+			switch(track[this.pointer + vlvByteCount + 1]) {
+				case 0x00: // Sequence Number
+				case 0x01: // Text Event
+				case 0x02: // Copyright Notice
+				case 0x03: // Sequence/Track Name
+				case 0x04: // Instrument Name
+				case 0x05: // Lyric
+				case 0x06: // Marker
+				case 0x07: // Cue Point
+				case 0x20: // MIDI Channel Prefix
+				case 0x2F: // End of Track
+				case 0x51: // Set Tempo
+				case 0x54: // SMTPE Offset
+				case 0x58: // Time Signature
+				case 0x59: // Key Signature
+				case 0x7F: // Sequencer-Specific Meta-event
+					break;
+			}
+
+			console.log('Event sig: ' + Utils.byteToHex(eventSig));
 			// Advance pointer
 			var length = track[this.pointer + vlvByteCount + 2];
 			//console.log('length: ' + length);
@@ -98,52 +117,19 @@ class Main {
 			if (this.tick >= delta) {
 				console.log('Event: ');
 				console.log(track.slice(this.pointer + vlvByteCount, this.pointer + vlvByteCount + 3));
+				this.emitEvent();
 				this.pointer += vlvByteCount + 3;
 			}
 		}
 	}
 
-	/* read a MIDI-style variable-length integer
-		(big-endian value in groups of 7 bits,
-		with top bit set to signify that another byte follows)
-	*/
-	readVarIntBak(number) {
-		var result = 0;
-		while (true) {
-			var b = number;
-			if (b & 0x80) {
-				result += (b & 0x7f);
-				result <<= 7;
-			} else {
-				/* b is the last byte */
-				return result + b;
-			}
-		}
-	}
-
-	// Need to update this function to work with an array of bytes making up a VLV value.
-	readVarInt(byteArray) {
-		var result = 0;
-		byteArray.forEach(function(number) {
-			var b = number;
-			if (b & 0x80) {
-				result += (b & 0x7f);
-				result <<= 7;
-			} else {
-				/* b is the last byte */
-				result += b;
-			}
-		});
-
-		return result;
-	}
 
 	play() {
-		this.getTracks();
+		this.tracks = this.getTracks();
 		this.division = this.getDivision();
 		this.startTime = (new Date).getTime();
+		
 		var me = this;
-
 		this.setIntervalId = setInterval(function() {
 			me.tick = Math.round(((new Date).getTime() - me.startTime) / 1000 * me.division);
 			
@@ -161,45 +147,10 @@ class Main {
 		return this;
 	}
 
-	byteToHex(byte) {
-		return byte.toString(16);
-	}
-
-	bytesToHex(byteArray) {
-		var hex = [];
-
-		byteArray.forEach(function(byte) {
-			hex.push(byte.toString(16));
-		});
-
-		return hex.join('');
-	}
-
-	hexToNumber(hexString) {
-		return parseInt(hexString, 16);
-	}
-
-	bytesToNumber(byteArray) {
-		return this.hexToNumber(this.bytesToHex(byteArray));
-	}
-
-	bytesToLetters(byteArray) {
-		var letters = [];
-		byteArray.forEach(function(byte) {
-			letters.push(String.fromCharCode(byte));
-		});
-
-		return letters.join('');
-	}
-
-	decToBinary(dec) {
-    	return (dec >>> 0).toString(2);
-	}
-
 	emitEvent() {
-		console.log('event');
+		//console.log({'hi':true});
 	}
 
 }
 
-exports.Main = Main;
+exports.Player = Player;
