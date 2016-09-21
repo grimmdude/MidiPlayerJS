@@ -1,7 +1,7 @@
 var fs = require('fs');
 
 class Player {
-	constructor() {
+	constructor(eventHandler) {
 		this.startTime = 0;
 		this.pointer = 0;
 		this.buffer;
@@ -13,11 +13,16 @@ class Player {
 		this.tick = 0;
 		this.lastStatus;
 		this.lastTick = null;
+
+		this.eventHandler = eventHandler;
 	}
 
 	loadFile(path) {
 		this.buffer = fs.readFileSync(path);
 		if (!this.validate()) throw 'Invalid file; should start with MThd';
+
+		this.tracks = this.getTracks();
+		this.division = this.getDivision();
 		return this;
 	}
 
@@ -87,26 +92,8 @@ class Player {
 
 		// Skip meta events for now (except for end of track)
 		if (eventSig == 0xff) {
-			switch(track[this.pointer + vlvByteCount + 1]) {
-				case 0x00: // Sequence Number
-				case 0x01: // Text Event
-				case 0x02: // Copyright Notice
-				case 0x03: // Sequence/Track Name
-				case 0x04: // Instrument Name
-				case 0x05: // Lyric
-				case 0x06: // Marker
-				case 0x07: // Cue Point
-				case 0x20: // MIDI Channel Prefix
-				case 0x2F: // End of Track
-				case 0x51: // Set Tempo
-				case 0x54: // SMTPE Offset
-				case 0x58: // Time Signature
-				case 0x59: // Key Signature
-				case 0x7F: // Sequencer-Specific Meta-event
-					break;
-			}
+			this.emitEvent( track.slice(this.pointer + vlvByteCount, this.pointer + vlvByteCount + 3)  )
 
-			console.log('Meta Event');
 			// Advance pointer
 			var length = track[this.pointer + vlvByteCount + 2];
 			//console.log('length: ' + length);
@@ -116,25 +103,49 @@ class Player {
 			// Note event
 			if ((this.lastTick === null && this.tick >= delta) || this.tick - this.lastTick >= delta ) {
 				this.lastTick = this.tick;
-				if (track[this.pointer + vlvByteCount] < 0x80) { // Running status
+
+				var statusByte = track[this.pointer + vlvByteCount];
+				if (statusByte < 0x80) {
+					// Running status
 					console.log('running status');
 					this.emitEvent(track.slice(this.pointer + vlvByteCount, this.pointer + vlvByteCount + 2));
 					this.pointer += vlvByteCount + 2;
 
 				} else {
-					this.lastStatus = track[this.pointer + vlvByteCount];
+					this.lastStatus = statusByte;
 
-					if (track[this.pointer + vlvByteCount] >= 192) { // program change
+					if (statusByte <= 0x8f) {
+						// Note off
+						this.emitEvent(track.slice(this.pointer + vlvByteCount, this.pointer + vlvByteCount + 3));
+						this.pointer += vlvByteCount + 3;
+
+					} else if (statusByte <= 0x9f) {
+						// Note on
+						this.emitEvent(track.slice(this.pointer + vlvByteCount, this.pointer + vlvByteCount + 3));
+						this.pointer += vlvByteCount + 3;
+
+					} else if (statusByte <= 0xaf) {
+						// Polyphonic Key Pressure
+						this.pointer += vlvByteCount + 3;
+
+					} else if (statusByte <= 0xbf) {
+						// Controller Change
+						this.pointer += vlvByteCount + 3;
+
+					} else if (statusByte <= 0xcf) {
+						// Program Change
 						this.emitEvent(track.slice(this.pointer + vlvByteCount, this.pointer + vlvByteCount + 2));
 						this.pointer += vlvByteCount + 2;
 
-					} else {
-						this.emitEvent(track.slice(this.pointer + vlvByteCount, this.pointer + vlvByteCount + 3));
+					} else if (statusByte <= 0xdf) {
+						// Channel Key Pressure
+						this.pointer += vlvByteCount + 2;
+
+					} else if (statusByte <= 0xef) {
+						// Pitch Bend
 						this.pointer += vlvByteCount + 3;
 					}
-					
-				}
-
+				} 
 			}
 		}
 	}
@@ -142,8 +153,6 @@ class Player {
 
 	play() {
 		// Initialize
-		this.tracks = this.getTracks();
-		this.division = this.getDivision();
 		this.startTime = (new Date).getTime();
 		
 		// Start play loop
@@ -169,7 +178,7 @@ class Player {
 	}
 
 	emitEvent(event) {
-		console.log(event);
+		if (typeof this.eventHandler === 'function') this.eventHandler(Event.parse(event));
 	}
 
 }
