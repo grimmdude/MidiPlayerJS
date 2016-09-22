@@ -3,12 +3,10 @@ var fs = require('fs');
 class Player {
 	constructor(eventHandler) {
 		this.startTime = 0;
-		this.pointer = 0;
 		this.pointers = [];
 		this.buffer;
 		this.division;
 		this.setIntervalId;
-		this.currentTime;
 		this.tracks = [];
 		this.tempo = 120;
 		this.tick = 0;
@@ -90,67 +88,9 @@ class Player {
 		var delta = Utils.readVarInt(track.slice(pointer, pointer + deltaByteCount));
 		var eventSig = track[pointer + deltaByteCount];
 
-		// Meta event
-		if (eventSig == 0xff) {
-			this.emitEvent(trackIndex, track.slice(pointer + deltaByteCount, pointer + deltaByteCount + 3));
-
-			// Advance pointer
-			var length = track[pointer + deltaByteCount + 2];
-			this.pointers[trackIndex] += length + 4;
-
-		} else {
-			// Note event
-			if ((this.lastTick === null && this.tick >= delta) || this.tick - this.lastTick >= delta ) {
-				this.lastTick = this.tick;
-				//this.emitEvent(this.parseEvent(trackIndex, deltaByteCount));
-
-
-
-				var statusByte = track[pointer + deltaByteCount];
-				if (statusByte < 0x80) {
-					// Running status
-					console.log('running status');
-					this.emitEvent(trackIndex, track.slice(pointer + deltaByteCount, pointer + deltaByteCount + 2));
-
-					// Some meta events will have vlv that needs to be handled
-					this.pointers[trackIndex] += deltaByteCount + 2;
-
-				} else {
-					this.lastStatus = statusByte;
-
-					if (statusByte <= 0x8f) {
-						// Note off
-						this.emitEvent(trackIndex, track.slice(pointer + deltaByteCount, pointer + deltaByteCount + 3));
-						this.pointers[trackIndex] += deltaByteCount + 3;
-
-					} else if (statusByte <= 0x9f) {
-						// Note on
-						this.emitEvent(trackIndex, track.slice(pointer + deltaByteCount, pointer + deltaByteCount + 3));
-						this.pointers[trackIndex] += deltaByteCount + 3;
-
-					} else if (statusByte <= 0xaf) {
-						// Polyphonic Key Pressure
-						this.pointers[trackIndex] += deltaByteCount + 3;
-
-					} else if (statusByte <= 0xbf) {
-						// Controller Change
-						this.pointers[trackIndex] += deltaByteCount + 3;
-
-					} else if (statusByte <= 0xcf) {
-						// Program Change
-						this.emitEvent(trackIndex, track.slice(pointer + deltaByteCount, pointer + deltaByteCount + 2));
-						this.pointers[trackIndex] += deltaByteCount + 2;
-
-					} else if (statusByte <= 0xdf) {
-						// Channel Key Pressure
-						this.pointers[trackIndex] += deltaByteCount + 2;
-
-					} else if (statusByte <= 0xef) {
-						// Pitch Bend
-						this.pointers[trackIndex] += deltaByteCount + 3;
-					}
-				} 
-			}
+		if ((this.lastTick === null && this.tick >= delta) || this.tick - this.lastTick >= delta ) {
+			this.lastTick = this.tick;
+			this.emitEvent(this.parseEvent(trackIndex, deltaByteCount));
 		}
 	}
 
@@ -208,25 +148,25 @@ class Player {
 		return Math.round(((new Date).getTime() - this.startTime) / 1000 * (this.division * (this.tempo / 60)));
 	}
 
-	emitEvent(trackIndex, event) {
-		if (typeof this.eventHandler === 'function') this.eventHandler(Event.parse(event));
+	emitEvent(event) {
+		if (typeof this.eventHandler === 'function') this.eventHandler(event);
 	}
 
 	toggleTrack(trackIndex) {
 
 	}
 
-	/*
-	 * @param event (includes delta)
-	 */
+	// Parses event into JSON and advances pointer for the track
 	parseEvent(trackIndex, deltaByteCount) {
-		var event = this.tracks[trackIndex][this.pointers[trackIndex] + deltaByteCount];
+		var track = this.tracks[trackIndex];
+		var eventStartIndex = this.pointers[trackIndex] + deltaByteCount;
 		var eventJson = {};
-		eventJson.raw = event;
+		eventJson.track = trackIndex + 1;
 
-		if (event[0] == 0xff) {
+		//eventJson.raw = event;
+		if (track[eventStartIndex] == 0xff) {
 			// Meta Event
-			switch(event[1]) {
+			switch(track[eventStartIndex + 1]) {
 				case 0x00: // Sequence Number
 					eventJson.name = 'Sequence Number';
 					break;
@@ -273,46 +213,61 @@ class Player {
 					eventJson.name = 'Sequencer-Specific Meta-event';
 					break;
 			}
+
+			var length = track[this.pointers[trackIndex] + deltaByteCount + 2];
+			// Some meta events will have vlv that needs to be handled
+
+			this.pointers[trackIndex] += length + 4;
+
 		} else {
 			// Voice event
-			if (event[0] < 0x80) {
+			if (track[eventStartIndex] < 0x80) {
 				// Running status
 				eventJson.running = true;
-				eventJson.note = Constants.NOTES[event[0]];
-				eventJson.velocity = event[1];
+				eventJson.note = Constants.NOTES[track[eventStartIndex]];
+				eventJson.velocity = track[eventStartIndex + 1];
+				this.lastStatus = track[eventStartIndex];
+				this.pointers[trackIndex] += deltaByteCount + 2;
 
 			} else {
-				if (event[0] <= 0x8f) {
+				if (track[eventStartIndex] <= 0x8f) {
 					// Note off
 					eventJson.name = 'Note off';
-					eventJson.note = Constants.NOTES[event[1]];
+					eventJson.note = Constants.NOTES[track[eventStartIndex + 1]];
+					this.pointers[trackIndex] += deltaByteCount + 3;
 
-				} else if (event[0] <= 0x9f) {
+				} else if (track[eventStartIndex] <= 0x9f) {
 					// Note on
 					eventJson.name = 'Note on';
-					eventJson.note = Constants.NOTES[event[1]];
+					eventJson.note = Constants.NOTES[track[eventStartIndex + 1]];
+					this.pointers[trackIndex] += deltaByteCount + 3;
 
-				} else if (event[0] <= 0xaf) {
+				} else if (track[eventStartIndex] <= 0xaf) {
 					// Polyphonic Key Pressure
 					eventJson.name = 'Polyphonic Key Pressure';
-					eventJson.note = Constants.NOTES[event[1]];
+					eventJson.note = Constants.NOTES[track[eventStartIndex + 1]];
 					eventJson.pressure = event[2];
+					this.pointers[trackIndex] += deltaByteCount + 3;
 
-				} else if (event[0] <= 0xbf) {
+				} else if (track[eventStartIndex] <= 0xbf) {
 					// Controller Change
 					eventJson.name = 'Controller Change';
+					this.pointers[trackIndex] += deltaByteCount + 3;
 
-				} else if (event[0] <= 0xcf) {
+				} else if (track[eventStartIndex] <= 0xcf) {
 					// Program Change
 					eventJson.name = 'Program Change';
+					this.pointers[trackIndex] += deltaByteCount + 2;
 
-				} else if (event[0] <= 0xdf) {
+				} else if (track[eventStartIndex] <= 0xdf) {
 					// Channel Key Pressure
 					eventJson.name = 'Channel Key Pressure';
+					this.pointers[trackIndex] += deltaByteCount + 2;
 
-				} else if (event[0] <= 0xef) {
+				} else if (track[eventStartIndex] <= 0xef) {
 					// Pitch Bend
 					eventJson.name = 'Pitch Bend';
+					this.pointers[trackIndex] += deltaByteCount + 3;
 				}
 			}
 		}
