@@ -98,6 +98,12 @@ class Event {
 
 		return eventJson;
 	}
+
+
+	// Get byte length of a note event by status byte
+	static noteEventLength(status) {
+
+	}
 }
 
 exports.Event = Event;

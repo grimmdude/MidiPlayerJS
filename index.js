@@ -4,5 +4,5 @@ var Player = new MidiPlayer.Player(function(event) {
 	console.log(event);
 });
 
-Player.loadFile('./midi2.mid');
+Player.loadFile('./simple.mid');
 Player.play();
