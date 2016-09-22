@@ -162,6 +162,7 @@ class Player {
 		var eventStartIndex = this.pointers[trackIndex] + deltaByteCount;
 		var eventJson = {};
 		eventJson.track = trackIndex + 1;
+		eventJson.delta = Utils.readVarInt(track.slice(this.pointers[trackIndex], this.pointers[trackIndex] + deltaByteCount));
 
 		//eventJson.raw = event;
 		if (track[eventStartIndex] == 0xff) {
@@ -178,6 +179,17 @@ class Player {
 					break;
 				case 0x03: // Sequence/Track Name
 					eventJson.name = 'Sequence/Track Name';
+					// Get vlv length
+					var currentByte = this.pointers[trackIndex];
+					var byteCount = 1;
+					while (currentByte >= 128) {
+						currentByte = track[this.pointers[trackIndex] + byteCount];
+						byteCount++;
+					}
+					eventJson.vlv = byteCount;
+					var length = Utils.readVarInt(track.slice(eventStartIndex + 2, eventStartIndex + 2 + byteCount));
+					eventJson.stringLength = length;
+					eventJson.string = Utils.bytesToLetters(track.slice(eventStartIndex + byteCount + 2, eventStartIndex + byteCount + length + 2));
 					break;
 				case 0x04: // Instrument Name
 					eventJson.name = 'Instrument Name';
@@ -199,6 +211,7 @@ class Player {
 					break;
 				case 0x51: // Set Tempo
 					eventJson.name = 'Set Tempo';
+					eventJson.data = Utils.bytesToNumber(track.slice(eventStartIndex + 3, eventStartIndex + 6));
 					break;
 				case 0x54: // SMTPE Offset
 					eventJson.name = 'SMTPE Offset';
@@ -224,7 +237,8 @@ class Player {
 			if (track[eventStartIndex] < 0x80) {
 				// Running status
 				eventJson.running = true;
-				eventJson.note = Constants.NOTES[track[eventStartIndex]];
+				eventJson.noteNumber = track[eventStartIndex + 1];
+				eventJson.noteName = Constants.NOTES[track[eventStartIndex]];
 				eventJson.velocity = track[eventStartIndex + 1];
 				this.lastStatus = track[eventStartIndex];
 				this.pointers[trackIndex] += deltaByteCount + 2;
@@ -233,13 +247,15 @@ class Player {
 				if (track[eventStartIndex] <= 0x8f) {
 					// Note off
 					eventJson.name = 'Note off';
-					eventJson.note = Constants.NOTES[track[eventStartIndex + 1]];
+					eventJson.noteNumber = track[eventStartIndex + 1];
+					eventJson.noteName = Constants.NOTES[track[eventStartIndex + 1]];
 					this.pointers[trackIndex] += deltaByteCount + 3;
 
 				} else if (track[eventStartIndex] <= 0x9f) {
 					// Note on
 					eventJson.name = 'Note on';
-					eventJson.note = Constants.NOTES[track[eventStartIndex + 1]];
+					eventJson.noteNumber = track[eventStartIndex + 1];
+					eventJson.noteName = Constants.NOTES[track[eventStartIndex + 1]];
 					this.pointers[trackIndex] += deltaByteCount + 3;
 
 				} else if (track[eventStartIndex] <= 0xaf) {
@@ -252,6 +268,8 @@ class Player {
 				} else if (track[eventStartIndex] <= 0xbf) {
 					// Controller Change
 					eventJson.name = 'Controller Change';
+					eventJson.number = track[eventStartIndex + 1];
+					eventJson.value = track[eventStartIndex + 2];
 					this.pointers[trackIndex] += deltaByteCount + 3;
 
 				} else if (track[eventStartIndex] <= 0xcf) {
