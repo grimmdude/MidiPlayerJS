@@ -8,10 +8,11 @@ class Player {
 		this.division;
 		this.setIntervalId;
 		this.tracks = [];
-		this.tempo = 120;
+		this.tempo = 100;
 		this.tick = 0;
-		this.lastStatus;
+		this.lastStatuses = [];
 		this.lastTick = null;
+		this.lastTicks = [];
 
 		this.eventHandler = eventHandler;
 	}
@@ -65,6 +66,7 @@ class Player {
 				var trackLength = Utils.bytesToNumber(this.buffer.slice(index + 4, index + 8));
 				this.tracks.push(this.buffer.slice(index + 8, index + 8 + trackLength));
 				this.pointers.push(0);
+				this.lastTicks.push(0);
 			}
 		}, this);
 
@@ -88,8 +90,8 @@ class Player {
 		var delta = Utils.readVarInt(track.slice(pointer, pointer + deltaByteCount));
 		var eventSig = track[pointer + deltaByteCount];
 
-		if ((this.lastTick === null && this.tick >= delta) || this.tick - this.lastTick >= delta ) {
-			this.lastTick = this.tick;
+		if (this.tick - this.lastTicks[trackIndex] >= delta) {
+			this.lastTicks[trackIndex] = this.tick;
 			this.emitEvent(this.parseEvent(trackIndex, deltaByteCount));
 		}
 	}
@@ -97,12 +99,27 @@ class Player {
 	play() {
 		// Initialize
 		this.startTime = (new Date).getTime();
-		
+
 		// Start play loop
 		var me = this;
 		this.setIntervalId = setInterval(function() {
 			me.tick = me.getCurrentTick();
+			
+			// Which one's faster?
+
+			for (var i = 0; i <= me.tracks.length - 1; i++) {
+				//console.log(me.tick)
+				// Handle next event
+				if (me.endOfTrack(i)) {
+					clearInterval(me.setIntervalId);
+
+				} else {
+					me.handleEvent(i);
+				}
+			}
+			/*
 			me.tracks.forEach(function(track, index) {
+				//console.log(me.tick)
 				// Handle next event
 				if (me.endOfTrack(index)) {
 					clearInterval(me.setIntervalId);
@@ -110,7 +127,9 @@ class Player {
 				} else {
 					me.handleEvent(index);
 				}
-			});		
+			});	
+			*/
+			
 		}, 1);
 
 		return this;
@@ -158,6 +177,7 @@ class Player {
 
 	// Parses event into JSON and advances pointer for the track
 	parseEvent(trackIndex, deltaByteCount) {
+		console.log(this.tick);
 		var track = this.tracks[trackIndex];
 		var eventStartIndex = this.pointers[trackIndex] + deltaByteCount;
 		var eventJson = {};
@@ -167,6 +187,11 @@ class Player {
 		//eventJson.raw = event;
 		if (track[eventStartIndex] == 0xff) {
 			// Meta Event
+
+			// If this is a meta event we should emit the data and immediately move to the next event
+			// otherwise if we let it run through the next cycle a slight delay will accumulate if multiple tracks
+			// are being played simultaneously
+
 			switch(track[eventStartIndex + 1]) {
 				case 0x00: // Sequence Number
 					eventJson.name = 'Sequence Number';
@@ -240,10 +265,19 @@ class Player {
 				eventJson.noteNumber = track[eventStartIndex + 1];
 				eventJson.noteName = Constants.NOTES[track[eventStartIndex]];
 				eventJson.velocity = track[eventStartIndex + 1];
-				this.lastStatus = track[eventStartIndex];
+				
+				if (this.lastStatuses[trackIndex] <= 0x8f) {
+					eventJson.name = 'Note off';
+
+				} else if (this.lastStatuses[trackIndex] <= 0x9f) {
+					eventJson.name = 'Note on';
+				}
+
 				this.pointers[trackIndex] += deltaByteCount + 2;
 
 			} else {
+				this.lastStatuses[trackIndex] = track[eventStartIndex];
+
 				if (track[eventStartIndex] <= 0x8f) {
 					// Note off
 					eventJson.name = 'Note off';
