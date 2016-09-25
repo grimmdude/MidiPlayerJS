@@ -8,6 +8,7 @@ class Player {
 		this.division;
 		this.setIntervalId;
 		this.tracks = [];
+		this.tracksEnabled = []; // 0 disabled, 1 enabled
 		this.tempo = 100;
 		this.tick = 0;
 		this.lastStatuses = [];
@@ -67,10 +68,19 @@ class Player {
 				this.tracks.push(this.buffer.slice(index + 8, index + 8 + trackLength));
 				this.pointers.push(0);
 				this.lastTicks.push(0);
+				this.tracksEnabled.push(1);
 			}
 		}, this);
 
 		return this;
+	}
+
+	enableTrack(trackNumber) {
+		this.tracksEnabled[trackNumber - 1] = 1;
+	}
+
+	disableTrack(trackNumber) {
+		this.tracksEnabled[trackNumber - 1] = 0;
 	}
 
 	getDivision() {
@@ -90,9 +100,14 @@ class Player {
 		var delta = Utils.readVarInt(track.slice(pointer, pointer + deltaByteCount));
 		var eventSig = track[pointer + deltaByteCount];
 
-		if (this.tick - this.lastTicks[trackIndex] >= delta) {
+		if (this.pointers[trackIndex] < this.tracks[trackIndex].length && this.tick - this.lastTicks[trackIndex] >= delta) {
 			this.lastTicks[trackIndex] = this.tick;
-			this.emitEvent(this.parseEvent(trackIndex, deltaByteCount));
+
+			var event = this.parseEvent(trackIndex, deltaByteCount);
+
+			if (this.tracksEnabled[trackIndex] == 1) this.emitEvent(event);
+			
+			// Recursively call this function for each event ahead that has 0 delta time?
 		}
 	}
 
@@ -110,7 +125,7 @@ class Player {
 			for (var i = 0; i <= me.tracks.length - 1; i++) {
 				//console.log(me.tick)
 				// Handle next event
-				if (me.endOfTrack(i)) {
+				if (me.endOfFile()) {
 					clearInterval(me.setIntervalId);
 
 				} else {
@@ -142,6 +157,11 @@ class Player {
 		}
 
 		return false;
+	}
+
+	endOfFile() {
+		// Currently assume header chunk is strictly 14 bytes
+		return 14 + this.tracks.length * 8 + this.pointers.reduce(function(a, b) {return a+b}, 0) == this.buffer.length;
 	}
 
 	getDeltaByteCount(trackIndex) {
@@ -177,7 +197,7 @@ class Player {
 
 	// Parses event into JSON and advances pointer for the track
 	parseEvent(trackIndex, deltaByteCount) {
-		console.log(this.tick);
+		//console.log(this.tick);
 		var track = this.tracks[trackIndex];
 		var eventStartIndex = this.pointers[trackIndex] + deltaByteCount;
 		var eventJson = {};
