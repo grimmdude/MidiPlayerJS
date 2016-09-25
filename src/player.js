@@ -103,8 +103,6 @@ class Player {
 		var eventSig = track[pointer + deltaByteCount];
 
 		if (this.pointers[trackIndex] < this.tracks[trackIndex].length && this.tick - this.lastTicks[trackIndex] >= delta) {
-			this.lastTicks[trackIndex] = this.tick;
-
 			var event = this.parseEvent(trackIndex, deltaByteCount);
 
 			if (this.tracksEnabled[trackIndex] == 1) this.emitEvent(event);
@@ -201,6 +199,7 @@ class Player {
 		var eventJson = {};
 		eventJson.track = trackIndex + 1;
 		eventJson.delta = Utils.readVarInt(track.slice(this.pointers[trackIndex], this.pointers[trackIndex] + deltaByteCount));
+		this.lastTicks[trackIndex] = this.lastTicks[trackIndex] + eventJson.delta;
 
 		//eventJson.raw = event;
 		if (track[eventStartIndex] == 0xff) {

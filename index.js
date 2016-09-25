@@ -8,5 +8,5 @@ var Player = new MidiPlayer.Player(function(event) {
 });
 
 Player.loadFile('./test.mid');
-Player.disableTrack(2);
+//Player.disableTrack(2);
 Player.play();
