@@ -77,10 +77,12 @@ class Player {
 
 	enableTrack(trackNumber) {
 		this.tracksEnabled[trackNumber - 1] = 1;
+		return this;
 	}
 
 	disableTrack(trackNumber) {
 		this.tracksEnabled[trackNumber - 1] = 0;
+		return this;
 	}
 
 	getDivision() {
@@ -189,10 +191,6 @@ class Player {
 
 	emitEvent(event) {
 		if (typeof this.eventHandler === 'function') this.eventHandler(event);
-	}
-
-	toggleTrack(trackIndex) {
-
 	}
 
 	// Parses event into JSON and advances pointer for the track
