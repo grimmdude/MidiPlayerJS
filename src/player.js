@@ -1,5 +1,3 @@
-var fs = require('fs');
-
 class Player {
 	constructor(eventHandler) {
 		this.startTime = 0;
@@ -18,16 +16,27 @@ class Player {
 		this.eventHandler = eventHandler;
 	}
 
+	// Only for NodeJS
 	loadFile(path) {
+		var fs = require('fs');
 		this.buffer = fs.readFileSync(path);
-		if (!this.validate()) throw 'Invalid file; should start with MThd';
-
-		this.getDivision().getTracks();
-		return this;
+		return this.fileLoaded();
 	}
 
-	loadArray(array) {
+	loadArrayBuffer(arrayBuffer) {
+		this.buffer = new Uint8Array(arrayBuffer);
+		return this.fileLoaded();
+	}
+
+	loadDataUri(dataUri) {
 		this.buffer = array;
+		return this.fileLoaded();
+	}
+
+	fileLoaded() {
+		if (!this.validate()) throw 'Invalid file; should start with MThd';
+		this.getDivision().getTracks();
+		return this;
 	}
 
 	// First four bytes should be MThd

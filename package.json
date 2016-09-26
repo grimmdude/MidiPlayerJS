@@ -17,7 +17,8 @@
   },
   "scripts": {
     "test": "mocha",
-    "build": "babel src --out-file build/index.js && uglifyjs build/index.js -m > build/index.min.js && ls -l build/"
+    "build": "babel src --out-file ./build/index.js && uglifyjs ./build/index.js -m > ./build/index.min.js && ls -l ./build/",
+    "browser": "browserify -r ./browser.js:MidiPlayer > ./browser/index.js && uglifyjs ./browser/index.js -m > ./browser/index.min.js"
   },
   "keywords": [
     "midi",

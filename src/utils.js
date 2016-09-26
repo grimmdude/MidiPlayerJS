@@ -50,5 +50,3 @@ class Utils {
 		return result;
 	}
 }
-
-exports.Utils = Utils;
