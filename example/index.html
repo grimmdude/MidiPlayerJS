@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<title>MidiPlayerJS - JavaScript Midi Player</title>
+		<!-- Latest compiled and minified CSS -->
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+		<link href="https://fonts.googleapis.com/css?family=Bree+Serif" rel="stylesheet">
+		<style type="text/css">
+			h1,h2,h3,h4 {font-family: 'Bree Serif', serif;}
+		</style>
+	</head>
+	<body>
+		<div class="container">
+			<h1>MidiPlayerJS</h1>
+			<h4>Choose a Midi File</h4>
+			<p>
+				<input type="file" onchange="loadFile()" class="form-control" />
+			</p>
+			<p>
+				<button class="btn btn-primary" onclick="Player.play()">Play</button>
+			</p>
+			<p>This MIDI player is using <a href="https://github.com/grimmdude/MidiPlayerJS">MidiPlayerJS</a> to read the file, and <a href="https://github.com/danigb/soundfont-player">soundfont-player</a> to load and play the sounds.</p>
+		</div>
+		<script src="../browser/index.min.js"></script>
+		<script src="scripts/soundfont-player.min.js"></script>
+		<script>
+			var MidiPlayer = require('MidiPlayer');
+			var loadFile, Player;
+			var ac = new AudioContext;
+			Soundfont.instrument(ac, 'https://raw.githubusercontent.com/gleitz/midi-js-soundfonts/gh-pages/MusyngKite/clavichord-mp3.js').then(function (clavinet) {
+
+				loadFile = function() {
+					var file    = document.querySelector('input[type=file]').files[0];
+					var reader  = new FileReader();
+					if (file) reader.readAsArrayBuffer(file);
+
+					reader.addEventListener("load", function () {
+						Player = new MidiPlayer.Player(function(event) {
+							//console.log(event);
+							if (event.name == 'Note on') clavinet.play(event.noteName, ac.currentTime, {gain:2});	
+						});
+						console.log(Player.loadArrayBuffer(reader.result));
+					}, false);
+				}
+			});
+		</script>
+	</body>
+</html>

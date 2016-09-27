@@ -1,8 +1,7 @@
 class Player {
-	constructor(eventHandler) {
+	constructor(eventHandler, buffer) {
 		this.startTime = 0;
-		this.pointers = [];
-		this.buffer;
+		this.buffer = buffer || null;
 		this.division;
 		this.setIntervalId;
 		this.tracks = [];
@@ -12,6 +11,7 @@ class Player {
 		this.lastStatuses = [];
 		this.lastTick = null;
 		this.lastTicks = [];
+		this.pointers = [];
 
 		this.eventHandler = eventHandler;
 	}
@@ -157,6 +157,14 @@ class Player {
 		}, 1);
 
 		return this;
+	}
+
+	stop() {
+		clearInterval(this.setIntervalId);
+		this.lastStatuses = [];
+		this.lastTick = null;
+		this.lastTicks = [];
+		this.pointers = [];
 	}
 
 	endOfTrack(trackIndex) {

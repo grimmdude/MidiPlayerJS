@@ -1,5 +1,5 @@
 var MidiPlayer = require('./build/index');
-var exec = require('child_process').exec;
+svar exec = require('child_process').exec;
 
 var Player = new MidiPlayer.Player(function(event) {
 	// Event handler

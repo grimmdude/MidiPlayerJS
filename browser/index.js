@@ -1,4 +1,6 @@
 require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+
+},{}],"MidiPlayer":[function(require,module,exports){
 'use strict';
 
 var Constants = {
@@ -28,12 +30,11 @@ var _createClass = function () { function defineProperties(target, props) { for 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var Player = function () {
-	function Player(eventHandler) {
+	function Player(eventHandler, buffer) {
 		_classCallCheck(this, Player);
 
 		this.startTime = 0;
-		this.pointers = [];
-		this.buffer;
+		this.buffer = buffer || null;
 		this.division;
 		this.setIntervalId;
 		this.tracks = [];
@@ -43,6 +44,7 @@ var Player = function () {
 		this.lastStatuses = [];
 		this.lastTick = null;
 		this.lastTicks = [];
+		this.pointers = [];
 
 		this.eventHandler = eventHandler;
 	}
@@ -208,6 +210,15 @@ var Player = function () {
 			}, 1);
 
 			return this;
+		}
+	}, {
+		key: 'stop',
+		value: function stop() {
+			clearInterval(this.setIntervalId);
+			this.lastStatuses = [];
+			this.lastTick = null;
+			this.lastTicks = [];
+			this.pointers = [];
 		}
 	}, {
 		key: 'endOfTrack',
@@ -501,9 +512,4 @@ var Utils = function () {
 }();
 
 
-},{"fs":2}],2:[function(require,module,exports){
-
-},{}],"MidiPlayer":[function(require,module,exports){
-var MidiPlayer = require('./build/index');
-module.exports = MidiPlayer;
-},{"./build/index":1}]},{},[]);
+},{"fs":1}]},{},[]);
