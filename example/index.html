@@ -14,6 +14,7 @@
 	<body>
 		<div class="container">
 			<h1>MidiPlayerJS</h1>
+			<p>This MIDI player is using <a href="https://github.com/grimmdude/MidiPlayerJS">MidiPlayerJS</a> to read the file, and <a href="https://github.com/danigb/soundfont-player">soundfont-player</a> to load and play the sounds.</p>
 			<h4>Choose a Midi File</h4>
 			<p>
 				<input type="file" onchange="loadFile()" class="form-control" />
@@ -21,7 +22,6 @@
 			<p>
 				<button class="btn btn-primary" onclick="Player.play()">Play</button>
 			</p>
-			<p>This MIDI player is using <a href="https://github.com/grimmdude/MidiPlayerJS">MidiPlayerJS</a> to read the file, and <a href="https://github.com/danigb/soundfont-player">soundfont-player</a> to load and play the sounds.</p>
 		</div>
 		<script src="../browser/index.min.js"></script>
 		<script src="scripts/soundfont-player.min.js"></script>
