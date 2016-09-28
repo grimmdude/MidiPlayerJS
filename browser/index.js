@@ -36,7 +36,7 @@ var Player = function () {
 		this.startTime = 0;
 		this.buffer = buffer || null;
 		this.division;
-		this.setIntervalId;
+		this.setIntervalId = null;
 		this.tracks = [];
 		this.tracksEnabled = []; // 0 disabled, 1 enabled
 		this.tempo = 100;
@@ -177,6 +177,11 @@ var Player = function () {
 	}, {
 		key: 'play',
 		value: function play() {
+			if (this.setIntervalId) {
+				console.log('Already playing...');
+				return false;
+			}
+
 			// Initialize
 			this.startTime = new Date().getTime();
 
@@ -212,6 +217,13 @@ var Player = function () {
 			return this;
 		}
 	}, {
+		key: 'pause',
+		value: function pause() {
+			clearInterval(this.setIntervalId);
+			this.setIntervalId = false;
+			return this;
+		}
+	}, {
 		key: 'stop',
 		value: function stop() {
 			clearInterval(this.setIntervalId);
@@ -219,6 +231,7 @@ var Player = function () {
 			this.lastTick = null;
 			this.lastTicks = [];
 			this.pointers = [];
+			return this;
 		}
 	}, {
 		key: 'endOfTrack',

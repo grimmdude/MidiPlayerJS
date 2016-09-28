@@ -3,7 +3,7 @@ class Player {
 		this.startTime = 0;
 		this.buffer = buffer || null;
 		this.division;
-		this.setIntervalId;
+		this.setIntervalId = null;
 		this.tracks = [];
 		this.tracksEnabled = []; // 0 disabled, 1 enabled
 		this.tempo = 100;
@@ -121,6 +121,11 @@ class Player {
 	}
 
 	play() {
+		if (this.setIntervalId) {
+			console.log('Already playing...');
+			return false;
+		}
+
 		// Initialize
 		this.startTime = (new Date).getTime();
 
@@ -159,12 +164,19 @@ class Player {
 		return this;
 	}
 
+	pause() {
+		clearInterval(this.setIntervalId);
+		this.setIntervalId = false;
+		return this;
+	}
+
 	stop() {
 		clearInterval(this.setIntervalId);
 		this.lastStatuses = [];
 		this.lastTick = null;
 		this.lastTicks = [];
 		this.pointers = [];
+		return this;
 	}
 
 	endOfTrack(trackIndex) {
