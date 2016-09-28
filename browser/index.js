@@ -120,6 +120,10 @@ var Player = function () {
 	}, {
 		key: 'getTracks',
 		value: function getTracks() {
+			this.tracks = [];
+			this.pointers = [];
+			this.lastTicks = [];
+			this.tracksEnabled = [];
 			this.buffer.forEach(function (byte, index) {
 				if (Utils.bytesToLetters(this.buffer.slice(index, index + 4)) == 'MTrk') {
 					var trackLength = Utils.bytesToNumber(this.buffer.slice(index + 4, index + 8));
@@ -227,11 +231,8 @@ var Player = function () {
 		key: 'stop',
 		value: function stop() {
 			clearInterval(this.setIntervalId);
-			this.lastStatuses = [];
-			this.lastTick = null;
-			this.lastTicks = [];
-			this.pointers = [];
-			return this;
+			this.setIntervalId = false;
+			return this.fileLoaded();
 		}
 	}, {
 		key: 'endOfTrack',

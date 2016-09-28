@@ -71,6 +71,10 @@ class Player {
 
 	// Parses out tracks and places them in this.tracks and initializes this.pointers
 	getTracks() {
+		this.tracks = [];
+		this.pointers = [];
+		this.lastTicks = [];
+		this.tracksEnabled = [];
 		this.buffer.forEach(function(byte, index) {
 			if (Utils.bytesToLetters(this.buffer.slice(index, index + 4)) == 'MTrk') {
 				var trackLength = Utils.bytesToNumber(this.buffer.slice(index + 4, index + 8));
@@ -172,11 +176,8 @@ class Player {
 
 	stop() {
 		clearInterval(this.setIntervalId);
-		this.lastStatuses = [];
-		this.lastTick = null;
-		this.lastTicks = [];
-		this.pointers = [];
-		return this;
+		this.setIntervalId = false;
+		return this.fileLoaded();
 	}
 
 	endOfTrack(trackIndex) {
