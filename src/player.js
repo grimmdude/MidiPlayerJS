@@ -29,12 +29,25 @@ class Player {
 	}
 
 	loadDataUri(dataUri) {
-		this.buffer = array;
+		// convert base64 to raw binary data held in a string
+		// doesn't handle URLEncoded DataURIs - see SO answer #6850276 for code that does this
+		var byteString = atob(dataUri.split(',')[1]);
+
+		// separate out the mime component
+		var mimeString = dataUri.split(',')[0].split(':')[1].split(';')[0];
+
+		// write the bytes of the string to an ArrayBuffer
+		var ia = new Uint8Array(byteString.length);
+		for (var i = 0; i < byteString.length; i++) {
+			ia[i] = byteString.charCodeAt(i);
+		}
+
+		this.buffer = ia;
 		return this.fileLoaded();
 	}
 
 	fileLoaded() {
-		if (!this.validate()) throw 'Invalid file; should start with MThd';
+		if (!this.validate()) throw 'Invalid MIDI file; should start with MThd';
 		this.getDivision().getTracks();
 		return this;
 	}
@@ -131,7 +144,10 @@ class Player {
 		}
 
 		// Initialize
-		this.startTime = (new Date).getTime();
+		if (!this.startTime) {
+			this.startTime = (new Date).getTime();
+
+		}
 
 		// Start play loop
 		var me = this;
@@ -177,7 +193,12 @@ class Player {
 	stop() {
 		clearInterval(this.setIntervalId);
 		this.setIntervalId = false;
+		this.startTime = 0;
 		return this.fileLoaded();
+	}
+
+	isPlaying() {
+		return this.setIntervalId > 0;
 	}
 
 	endOfTrack(trackIndex) {
@@ -283,7 +304,8 @@ class Player {
 					break;
 				case 0x51: // Set Tempo
 					eventJson.name = 'Set Tempo';
-					eventJson.data = Utils.bytesToNumber(track.slice(eventStartIndex + 3, eventStartIndex + 6));
+					eventJson.data = 60000000 / Utils.bytesToNumber(track.slice(eventStartIndex + 3, eventStartIndex + 6));
+					this.tempo = eventJson.data;
 					break;
 				case 0x54: // SMTPE Offset
 					eventJson.name = 'SMTPE Offset';
@@ -330,6 +352,7 @@ class Player {
 					eventJson.name = 'Note off';
 					eventJson.noteNumber = track[eventStartIndex + 1];
 					eventJson.noteName = Constants.NOTES[track[eventStartIndex + 1]];
+					eventJson.velocity = Math.round(track[eventStartIndex + 2] / 127 * 100);
 					this.pointers[trackIndex] += deltaByteCount + 3;
 
 				} else if (track[eventStartIndex] <= 0x9f) {
@@ -337,6 +360,7 @@ class Player {
 					eventJson.name = 'Note on';
 					eventJson.noteNumber = track[eventStartIndex + 1];
 					eventJson.noteName = Constants.NOTES[track[eventStartIndex + 1]];
+					eventJson.velocity = Math.round(track[eventStartIndex + 2] / 127 * 100);
 					this.pointers[trackIndex] += deltaByteCount + 3;
 
 				} else if (track[eventStartIndex] <= 0xaf) {
