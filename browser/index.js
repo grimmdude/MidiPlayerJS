@@ -410,7 +410,7 @@ var Player = function () {
 				if (track[eventStartIndex] < 0x80) {
 					// Running status
 					eventJson.running = true;
-					eventJson.noteNumber = track[eventStartIndex + 1];
+					eventJson.noteNumber = track[eventStartIndex];
 					eventJson.noteName = Constants.NOTES[track[eventStartIndex]];
 					eventJson.velocity = track[eventStartIndex + 1];
 
