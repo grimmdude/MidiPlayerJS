@@ -31,7 +31,7 @@ class Player {
 	loadDataUri(dataUri) {
 		// convert base64 to raw binary data held in a string
 		// doesn't handle URLEncoded DataURIs - see SO answer #6850276 for code that does this
-		var byteString = atob(dataUri.split(',')[1]);
+		var byteString = Utils.atob(dataUri.split(',')[1]);
 
 		// separate out the mime component
 		var mimeString = dataUri.split(',')[0].split(':')[1].split(';')[0];
@@ -57,13 +57,6 @@ class Player {
 		return Utils.bytesToLetters(this.buffer.slice(0, 4)) === 'MThd';
 	}
 
-	getLength() {
-		this.buffer.slice(4,8).forEach(function(byte) {
-			console.log(byte)
-		})
-		return this.buffer.slice(4, 8);
-	}
-
 	getFormat() {
 		/*
 		MIDI files come in 3 variations:
@@ -76,10 +69,6 @@ class Player {
 		*/
 
 		return Utils.bytesToNumber(this.buffer.slice(8, 10));
-	}
-
-	getTrackCount() {
-		return Utils.bytesToNumber(this.buffer.slice(10, 12));
 	}
 
 	// Parses out tracks and places them in this.tracks and initializes this.pointers

@@ -1,4 +1,5 @@
 var Constants = {
+	VERSION: '1.0.0',
 	NOTES: []
 };
 
@@ -15,3 +16,5 @@ var Constants = {
 		});
 	}
 })();
+
+exports.Constants = Constants;
