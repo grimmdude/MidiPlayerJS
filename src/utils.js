@@ -49,4 +49,11 @@ class Utils {
 
 		return result;
 	}
+
+	static atob(string) {
+		if (typeof atob === 'function') return atob(string);
+		return new Buffer(string, 'base64').toString('binary');
+	}
 }
+
+exports.Utils = Utils;
