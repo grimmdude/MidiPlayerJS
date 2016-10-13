@@ -1924,7 +1924,7 @@ module.exports = Array.isArray || function (arr) {
 'use strict';
 
 var Constants = {
-	VERSION: '1.0.0',
+	VERSION: '1.0.1',
 	NOTES: []
 };
 
