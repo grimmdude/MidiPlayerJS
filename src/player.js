@@ -1,6 +1,7 @@
 class Player {
 	constructor(eventHandler, buffer) {
 		this.startTime = 0;
+		this.pauseTime = 0;
 		this.buffer = buffer || null;
 		this.division;
 		this.setIntervalId = null;
@@ -136,6 +137,8 @@ class Player {
 		if (!this.startTime) {
 			this.startTime = (new Date).getTime();
 
+		} else if (this.pauseTime) {
+			this.startTime = this.pauseTime;
 		}
 
 		// Start play loop
@@ -168,7 +171,7 @@ class Player {
 			});	
 			*/
 			
-		}, 1);
+		}, 10);
 
 		return this;
 	}
@@ -176,6 +179,7 @@ class Player {
 	pause() {
 		clearInterval(this.setIntervalId);
 		this.setIntervalId = false;
+		this.pauseTime = (new Date).getTime();
 		return this;
 	}
 

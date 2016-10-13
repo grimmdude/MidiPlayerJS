@@ -1957,6 +1957,7 @@ var Player = function () {
 		_classCallCheck(this, Player);
 
 		this.startTime = 0;
+		this.pauseTime = 0;
 		this.buffer = buffer || null;
 		this.division;
 		this.setIntervalId = null;
@@ -2112,6 +2113,8 @@ var Player = function () {
 			// Initialize
 			if (!this.startTime) {
 				this.startTime = new Date().getTime();
+			} else if (this.pauseTime) {
+				this.startTime = this.pauseTime;
 			}
 
 			// Start play loop
@@ -2141,7 +2144,7 @@ var Player = function () {
     	}
     });	
     */
-			}, 1);
+			}, 10);
 
 			return this;
 		}
@@ -2150,6 +2153,7 @@ var Player = function () {
 		value: function pause() {
 			clearInterval(this.setIntervalId);
 			this.setIntervalId = false;
+			this.pauseTime = new Date().getTime();
 			return this;
 		}
 	}, {
