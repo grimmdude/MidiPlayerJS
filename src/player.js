@@ -1,8 +1,10 @@
 class Player {
 	constructor(eventHandler, buffer) {
 		this.startTime = 0;
+		this.pauseTime = 0;
 		this.buffer = buffer || null;
 		this.division;
+		this.format;
 		this.setIntervalId = null;
 		this.tracks = [];
 		this.tracksEnabled = []; // 0 disabled, 1 enabled
@@ -48,7 +50,7 @@ class Player {
 
 	fileLoaded() {
 		if (!this.validate()) throw 'Invalid MIDI file; should start with MThd';
-		this.getDivision().getTracks();
+		this.getDivision().getFormat().getTracks();
 		return this;
 	}
 
@@ -68,7 +70,8 @@ class Player {
 		return Utils.bytesToNumber(this.buffer.slice(8, 10));
 		*/
 
-		return Utils.bytesToNumber(this.buffer.slice(8, 10));
+		this.format = Utils.bytesToNumber(this.buffer.slice(8, 10));
+		return this;
 	}
 
 	// Parses out tracks and places them in this.tracks and initializes this.pointers
@@ -136,6 +139,8 @@ class Player {
 		if (!this.startTime) {
 			this.startTime = (new Date).getTime();
 
+		} else if (this.pauseTime) {
+			this.startTime = this.pauseTime;
 		}
 
 		// Start play loop
@@ -168,7 +173,7 @@ class Player {
 			});	
 			*/
 			
-		}, 1);
+		}, 10);
 
 		return this;
 	}
@@ -176,6 +181,7 @@ class Player {
 	pause() {
 		clearInterval(this.setIntervalId);
 		this.setIntervalId = false;
+		this.pauseTime = (new Date).getTime();
 		return this;
 	}
 
@@ -288,6 +294,10 @@ class Player {
 				case 0x20: // MIDI Channel Prefix
 					eventJson.name = 'MIDI Channel Prefix';
 					break;
+				case 0x21: // MIDI Port
+					eventJson.name = 'MIDI Port';
+					eventJson.data = Utils.bytesToNumber([track[eventStartIndex + 3]]);
+					break;
 				case 0x2F: // End of Track
 					eventJson.name = 'End of Track';
 					break;
@@ -308,12 +318,21 @@ class Player {
 				case 0x7F: // Sequencer-Specific Meta-event
 					eventJson.name = 'Sequencer-Specific Meta-event';
 					break;
+				default:
+					eventJson.name = 'Unknown: ' + track[eventStartIndex + 1].toString(16);
+					break;
 			}
 
 			var length = track[this.pointers[trackIndex] + deltaByteCount + 2];
 			// Some meta events will have vlv that needs to be handled
 
-			this.pointers[trackIndex] += length + 4;
+			this.pointers[trackIndex] += deltaByteCount + 3 + length;
+
+		} else if(track[eventStartIndex] == 0xf0) {
+			// Sysex
+			eventJson.name = 'Sysex';
+			var length = track[this.pointers[trackIndex] + deltaByteCount + 1];
+			this.pointers[trackIndex] += deltaByteCount + 2 + length;
 
 		} else {
 			// Voice event

@@ -1,6 +1,6 @@
 {
   "name": "midi-player-js",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A javascript library to play MIDI files",
   "main": "module/index.js",
   "scripts": {
