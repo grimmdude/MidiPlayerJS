@@ -1960,6 +1960,7 @@ var Player = function () {
 		this.pauseTime = 0;
 		this.buffer = buffer || null;
 		this.division;
+		this.format;
 		this.setIntervalId = null;
 		this.tracks = [];
 		this.tracksEnabled = []; // 0 disabled, 1 enabled
@@ -2012,7 +2013,7 @@ var Player = function () {
 		key: 'fileLoaded',
 		value: function fileLoaded() {
 			if (!this.validate()) throw 'Invalid MIDI file; should start with MThd';
-			this.getDivision().getTracks();
+			this.getDivision().getFormat().getTracks();
 			return this;
 		}
 
@@ -2036,7 +2037,8 @@ var Player = function () {
    return Utils.bytesToNumber(this.buffer.slice(8, 10));
    */
 
-			return Utils.bytesToNumber(this.buffer.slice(8, 10));
+			this.format = Utils.bytesToNumber(this.buffer.slice(8, 10));
+			return this;
 		}
 
 		// Parses out tracks and places them in this.tracks and initializes this.pointers
@@ -2287,6 +2289,11 @@ var Player = function () {
 						// MIDI Channel Prefix
 						eventJson.name = 'MIDI Channel Prefix';
 						break;
+					case 0x21:
+						// MIDI Port
+						eventJson.name = 'MIDI Port';
+						eventJson.data = Utils.bytesToNumber([track[eventStartIndex + 3]]);
+						break;
 					case 0x2F:
 						// End of Track
 						eventJson.name = 'End of Track';
@@ -2313,12 +2320,20 @@ var Player = function () {
 						// Sequencer-Specific Meta-event
 						eventJson.name = 'Sequencer-Specific Meta-event';
 						break;
+					default:
+						eventJson.name = 'Unknown: ' + track[eventStartIndex + 1].toString(16);
+						break;
 				}
 
 				var length = track[this.pointers[trackIndex] + deltaByteCount + 2];
 				// Some meta events will have vlv that needs to be handled
 
-				this.pointers[trackIndex] += length + 4;
+				this.pointers[trackIndex] += deltaByteCount + 3 + length;
+			} else if (track[eventStartIndex] == 0xf0) {
+				// Sysex
+				eventJson.name = 'Sysex';
+				var length = track[this.pointers[trackIndex] + deltaByteCount + 1];
+				this.pointers[trackIndex] += deltaByteCount + 2 + length;
 			} else {
 				// Voice event
 				if (track[eventStartIndex] < 0x80) {
