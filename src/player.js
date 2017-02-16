@@ -108,6 +108,12 @@ class Player {
 		return this;
 	}
 
+	getTotalTicks() {
+		this.tracks[0].forEach(function(track, index) {
+			console.log(index);
+		});
+	}
+
 	/**
 	 * Handles event within a given track starting at specified index
 	 * @param track
@@ -120,7 +126,7 @@ class Player {
 		var delta = Utils.readVarInt(track.slice(pointer, pointer + deltaByteCount));
 		var eventSig = track[pointer + deltaByteCount];
 
-		if (this.pointers[trackIndex] < this.tracks[trackIndex].length && this.tick - this.lastTicks[trackIndex] >= delta) {
+		if (this.pointers[trackIndex] < track.length && this.tick - this.lastTicks[trackIndex] >= delta) {
 			var event = this.parseEvent(trackIndex, deltaByteCount);
 
 			if (this.tracksEnabled[trackIndex] == 1) this.emitEvent(event);
@@ -303,7 +309,7 @@ class Player {
 					break;
 				case 0x51: // Set Tempo
 					eventJson.name = 'Set Tempo';
-					eventJson.data = 60000000 / Utils.bytesToNumber(track.slice(eventStartIndex + 3, eventStartIndex + 6));
+					eventJson.data = Math.round(60000000 / Utils.bytesToNumber(track.slice(eventStartIndex + 3, eventStartIndex + 6)));
 					this.tempo = eventJson.data;
 					break;
 				case 0x54: // SMTPE Offset
