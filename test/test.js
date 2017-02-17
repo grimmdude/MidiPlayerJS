@@ -24,7 +24,7 @@ describe('MidiPlayerJS', function() {
 
 		describe('#bytesToNumber()', function () {
 			it('should return base 10 value from array of bytes.', function () {
-				assert.equal(57699, MidiPlayer.Utils.bytesToNumber([14, 22, 3]));
+				assert.equal(923139, MidiPlayer.Utils.bytesToNumber([14, 22, 3]));
 			});
 		});
 
