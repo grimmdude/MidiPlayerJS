@@ -8,7 +8,7 @@ class Player {
 		this.setIntervalId = null;
 		this.tracks = [];
 		this.tracksEnabled = []; // 0 disabled, 1 enabled
-		this.tempo = 100;
+		this.tempo = 120;
 		this.tick = 0;
 		this.lastStatuses = [];
 		this.lastTick = null;
@@ -130,9 +130,15 @@ class Player {
 			var event = this.parseEvent(trackIndex, deltaByteCount);
 
 			if (this.tracksEnabled[trackIndex] == 1) this.emitEvent(event);
-			
+
 			// Recursively call this function for each event ahead that has 0 delta time?
-		}
+
+		} /*else {
+			console.log("Track length: " + track.length)
+			console.log("Track pointer: " + this.pointers[trackIndex])
+			console.log('delta: ' + delta)
+			console.log('event not handled...')
+		}*/
 	}
 
 	play() {

@@ -1964,7 +1964,7 @@ var Player = function () {
 		this.setIntervalId = null;
 		this.tracks = [];
 		this.tracksEnabled = []; // 0 disabled, 1 enabled
-		this.tempo = 100;
+		this.tempo = 120;
 		this.tick = 0;
 		this.lastStatuses = [];
 		this.lastTick = null;
@@ -2109,7 +2109,12 @@ var Player = function () {
 				if (this.tracksEnabled[trackIndex] == 1) this.emitEvent(event);
 
 				// Recursively call this function for each event ahead that has 0 delta time?
-			}
+			} /*else {
+     console.log("Track length: " + track.length)
+     console.log("Track pointer: " + this.pointers[trackIndex])
+     console.log('delta: ' + delta)
+     console.log('event not handled...')
+     }*/
 		}
 	}, {
 		key: 'play',
@@ -2425,7 +2430,8 @@ var Utils = function () {
 	_createClass(Utils, null, [{
 		key: 'byteToHex',
 		value: function byteToHex(byte) {
-			return byte.toString(16);
+			// Ensure hex string always has two chars
+			return ('0' + byte.toString(16)).slice(-2);
 		}
 	}, {
 		key: 'bytesToHex',

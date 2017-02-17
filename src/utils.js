@@ -1,6 +1,7 @@
 class Utils {
 	static byteToHex(byte) {
-		return byte.toString(16);
+		// Ensure hex string always has two chars
+		return ('0' + byte.toString(16)).slice(-2);
 	}
 
 	static bytesToHex(byteArray) {
