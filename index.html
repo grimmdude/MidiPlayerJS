@@ -22,7 +22,7 @@
 			<p id="loading">Loading soundfont...</p>
 			<p>
 				<button class="btn btn-primary" id="play-button" onclick="Player.isPlaying() ? pause() : play();" disabled="disabled">Play</button>
-				<button class="btn btn-default" onclick="Player.stop()">Stop</button>
+				<button class="btn btn-default" onclick="stop()">Stop</button>
 			</p>
 			<!--
 			<h4>Tempo</h4>
@@ -110,6 +110,11 @@
 
 				pause = function() {
 					Player.pause();
+					document.getElementById('play-button').innerHTML = 'Play';
+				}
+
+				stop = function() {
+					Player.stop();
 					document.getElementById('play-button').innerHTML = 'Play';
 				}
 

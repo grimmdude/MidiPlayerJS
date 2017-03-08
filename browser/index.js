@@ -1988,9 +1988,6 @@ var Player = function () {
 			// doesn't handle URLEncoded DataURIs - see SO answer #6850276 for code that does this
 			var byteString = Utils.atob(dataUri.split(',')[1]);
 
-			// separate out the mime component
-			var mimeString = dataUri.split(',')[0].split(':')[1].split(';')[0];
-
 			// write the bytes of the string to an ArrayBuffer
 			var ia = new Uint8Array(byteString.length);
 			for (var i = 0; i < byteString.length; i++) {
@@ -2080,7 +2077,7 @@ var Player = function () {
 
 		/**
    * Handles event within a given track starting at specified index
-   * @param track
+   * @param trackIndex
    */
 
 	}, {
@@ -2091,7 +2088,6 @@ var Player = function () {
 			var pointer = this.pointers[trackIndex];
 			var deltaByteCount = this.getDeltaByteCount(trackIndex);
 			var delta = Utils.readVarInt(track.slice(pointer, pointer + deltaByteCount));
-			var eventSig = track[pointer + deltaByteCount];
 
 			if (this.pointers[trackIndex] < track.length && this.tick - this.lastTicks[trackIndex] >= delta) {
 				var event = this.parseEvent(trackIndex, deltaByteCount);
@@ -2123,6 +2119,7 @@ var Player = function () {
 					//console.log(me.tick)
 					// Handle next event
 					if (me.endOfFile()) {
+						console.log('End of file');
 						clearInterval(me.setIntervalId);
 					} else {
 						me.handleEvent(i);

@@ -35,9 +35,6 @@ class Player {
 		// doesn't handle URLEncoded DataURIs - see SO answer #6850276 for code that does this
 		var byteString = Utils.atob(dataUri.split(',')[1]);
 
-		// separate out the mime component
-		var mimeString = dataUri.split(',')[0].split(':')[1].split(';')[0];
-
 		// write the bytes of the string to an ArrayBuffer
 		var ia = new Uint8Array(byteString.length);
 		for (var i = 0; i < byteString.length; i++) {
@@ -115,7 +112,7 @@ class Player {
 
 	/**
 	 * Handles event within a given track starting at specified index
-	 * @param track
+	 * @param trackIndex
 	 */
 	handleEvent(trackIndex) {
 		// Parse delta value
@@ -123,7 +120,6 @@ class Player {
 		var pointer = this.pointers[trackIndex];
 		var deltaByteCount = this.getDeltaByteCount(trackIndex);
 		var delta = Utils.readVarInt(track.slice(pointer, pointer + deltaByteCount));
-		var eventSig = track[pointer + deltaByteCount];
 
 		if (this.pointers[trackIndex] < track.length && this.tick - this.lastTicks[trackIndex] >= delta) {
 			var event = this.parseEvent(trackIndex, deltaByteCount);
@@ -131,7 +127,6 @@ class Player {
 			if (this.tracksEnabled[trackIndex] == 1) this.emitEvent(event);
 
 			// Recursively call this function for each event ahead that has 0 delta time?
-
 		}
 	}
 
@@ -143,7 +138,7 @@ class Player {
 
 		// Initialize
 		if (!this.startTime) {
-			this.startTime = (new Date).getTime();
+			this.startTime = (new Date()).getTime();
 		}
 
 		// Start play loop
@@ -155,6 +150,7 @@ class Player {
 				//console.log(me.tick)
 				// Handle next event
 				if (me.endOfFile()) {
+					console.log('End of file');
 					clearInterval(me.setIntervalId);
 
 				} else {
@@ -198,7 +194,7 @@ class Player {
 
 	endOfFile() {
 		// Currently assume header chunk is strictly 14 bytes
-		return 14 + this.tracks.length * 8 + this.pointers.reduce(function(a, b) {return a+b}, 0) == this.buffer.length;
+		return 14 + this.tracks.length * 8 + this.pointers.reduce(function(a, b) {return a+b;}, 0) == this.buffer.length;
 	}
 
 	getDeltaByteCount(trackIndex) {
@@ -221,7 +217,7 @@ class Player {
 	}
 
 	getCurrentTick() {
-		return Math.round(((new Date).getTime() - this.startTime) / 1000 * (this.division * (this.tempo / 60))) + this.startTick;
+		return Math.round(((new Date()).getTime() - this.startTime) / 1000 * (this.division * (this.tempo / 60))) + this.startTick;
 	}
 
 	emitEvent(event) {
