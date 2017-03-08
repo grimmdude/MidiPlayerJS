@@ -43,7 +43,10 @@
 		<script>
 			var MidiPlayer = require('MidiPlayer');
 			var loadFile, changeTempo, pause, Player;
-			var ac = new AudioContext;
+			var AudioContext = window.AudioContext // Default
+    			|| window.webkitAudioContext // Safari and old versions of Chrome
+    			|| false; 
+			var ac = new AudioContext || new webkitAudioContext;
 			var eventsDiv = document.getElementById('events');
 			Soundfont.instrument(ac, 'https://raw.githubusercontent.com/gleitz/midi-js-soundfonts/gh-pages/MusyngKite/acoustic_guitar_nylon-mp3.js').then(function (instrument) {
 				document.getElementById('loading').style.display = 'none';
