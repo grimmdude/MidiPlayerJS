@@ -21,7 +21,7 @@
 			</p>
 			<p id="loading">Loading soundfont...</p>
 			<p>
-				<button class="btn btn-primary" id="play-button" onclick="Player.isPlaying() ? Player.pause() : Player.play();" disabled="disabled">Play</button>
+				<button class="btn btn-primary" id="play-button" onclick="Player.isPlaying() ? pause() : play();" disabled="disabled">Play</button>
 				<button class="btn btn-default" onclick="Player.stop()">Stop</button>
 			</p>
 			<!--
@@ -42,7 +42,7 @@
 		<script src="demo/scripts/soundfont-player.min.js"></script>
 		<script>
 			var MidiPlayer = require('MidiPlayer');
-			var loadFile, changeTempo, Player;
+			var loadFile, changeTempo, pause, Player;
 			var ac = new AudioContext;
 			var eventsDiv = document.getElementById('events');
 			Soundfont.instrument(ac, 'https://raw.githubusercontent.com/gleitz/midi-js-soundfonts/gh-pages/MusyngKite/acoustic_guitar_nylon-mp3.js').then(function (instrument) {
@@ -73,7 +73,7 @@
 						document.getElementById('play-button').removeAttribute('disabled');
 
 						buildTracksHtml();
-						Player.play();
+						play();
 					}, false);
 				}
 
@@ -93,11 +93,21 @@
 					document.getElementById('play-button').removeAttribute('disabled');
 
 					buildTracksHtml();
-					Player.play();
+					play();
 				}
 
 				changeTempo = function(tempo) {
 					Player.tempo = tempo;
+				}
+
+				play = function() {
+					Player.play();
+					document.getElementById('play-button').innerHTML = 'Pause';
+				}
+
+				pause = function() {
+					Player.pause();
+					document.getElementById('play-button').innerHTML = 'Play';
 				}
 
 				buildTracksHtml = function() {

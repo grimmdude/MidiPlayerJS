@@ -1,7 +1,6 @@
 class Player {
 	constructor(eventHandler, buffer) {
 		this.startTime = 0;
-		this.pauseTime = 0;
 		this.buffer = buffer || null;
 		this.division;
 		this.format;
@@ -9,6 +8,7 @@ class Player {
 		this.tracks = [];
 		this.tracksEnabled = []; // 0 disabled, 1 enabled
 		this.tempo = 120;
+		this.startTick = 0;
 		this.tick = 0;
 		this.lastStatuses = [];
 		this.lastTick = null;
@@ -50,8 +50,7 @@ class Player {
 
 	fileLoaded() {
 		if (!this.validate()) throw 'Invalid MIDI file; should start with MThd';
-		this.getDivision().getFormat().getTracks();
-		return this;
+		return this.getDivision().getFormat().getTracks();
 	}
 
 	// First four bytes should be MThd
@@ -133,12 +132,7 @@ class Player {
 
 			// Recursively call this function for each event ahead that has 0 delta time?
 
-		} /*else {
-			console.log("Track length: " + track.length)
-			console.log("Track pointer: " + this.pointers[trackIndex])
-			console.log('delta: ' + delta)
-			console.log('event not handled...')
-		}*/
+		}
 	}
 
 	play() {
@@ -150,9 +144,6 @@ class Player {
 		// Initialize
 		if (!this.startTime) {
 			this.startTime = (new Date).getTime();
-
-		} else if (this.pauseTime) {
-			this.startTime = this.pauseTime;
 		}
 
 		// Start play loop
@@ -160,8 +151,6 @@ class Player {
 		this.setIntervalId = setInterval(function() {
 			me.tick = me.getCurrentTick();
 			
-			// Which one's faster?
-
 			for (var i = 0; i <= me.tracks.length - 1; i++) {
 				//console.log(me.tick)
 				// Handle next event
@@ -172,18 +161,6 @@ class Player {
 					me.handleEvent(i);
 				}
 			}
-			/*
-			me.tracks.forEach(function(track, index) {
-				//console.log(me.tick)
-				// Handle next event
-				if (me.endOfTrack(index)) {
-					clearInterval(me.setIntervalId);
-
-				} else {
-					me.handleEvent(index);
-				}
-			});	
-			*/
 			
 		}, 10);
 
@@ -193,13 +170,15 @@ class Player {
 	pause() {
 		clearInterval(this.setIntervalId);
 		this.setIntervalId = false;
-		this.pauseTime = (new Date).getTime();
+		this.startTick = this.tick;
+		this.startTime = 0;
 		return this;
 	}
 
 	stop() {
 		clearInterval(this.setIntervalId);
 		this.setIntervalId = false;
+		this.startTick = 0;
 		this.startTime = 0;
 		return this.fileLoaded();
 	}
@@ -242,7 +221,7 @@ class Player {
 	}
 
 	getCurrentTick() {
-		return Math.round(((new Date).getTime() - this.startTime) / 1000 * (this.division * (this.tempo / 60)));
+		return Math.round(((new Date).getTime() - this.startTime) / 1000 * (this.division * (this.tempo / 60))) + this.startTick;
 	}
 
 	emitEvent(event) {
