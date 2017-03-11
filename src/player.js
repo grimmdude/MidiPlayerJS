@@ -110,6 +110,24 @@ class Player {
 		});
 	}
 
+	playLoop() {
+		this.tick = this.getCurrentTick();
+		
+		for (var i = 0; i <= this.tracks.length - 1; i++) {
+			//console.log(me.tick)
+			// Handle next event
+			if (this.endOfFile()) {
+				console.log('End of file');
+				this.stop();
+
+			} else {
+				this.handleEvent(i);
+			}
+		}
+
+		//window.requestAnimationFrame(this.playLoop.bind(this));
+	}
+
 	/**
 	 * Handles event within a given track starting at specified index
 	 * @param trackIndex
@@ -137,28 +155,11 @@ class Player {
 		}
 
 		// Initialize
-		if (!this.startTime) {
-			this.startTime = (new Date()).getTime();
-		}
+		if (!this.startTime) this.startTime = (new Date()).getTime();
 
 		// Start play loop
-		var me = this;
-		this.setIntervalId = setInterval(function() {
-			me.tick = me.getCurrentTick();
-			
-			for (var i = 0; i <= me.tracks.length - 1; i++) {
-				//console.log(me.tick)
-				// Handle next event
-				if (me.endOfFile()) {
-					console.log('End of file');
-					clearInterval(me.setIntervalId);
-
-				} else {
-					me.handleEvent(i);
-				}
-			}
-			
-		}, 10);
+		//window.requestAnimationFrame(this.playLoop.bind(this));
+		this.setIntervalId = setInterval(this.playLoop.bind(this), 10);
 
 		return this;
 	}
