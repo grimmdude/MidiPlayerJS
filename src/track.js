@@ -47,7 +47,7 @@ class Track	{
 	 * Handles event within a given track starting at specified index
 	 * @param trackIndex
 	 */
-	handleEvent(currentTick) {
+	handleEvent(currentTick, exportJSON) {
 		// Parse delta value
 		/*
 		var track = this.tracks[trackIndex];
@@ -56,7 +56,8 @@ class Track	{
 		var delta = Utils.readVarInt(track.slice(pointer, pointer + deltaByteCount));
 		*/
 
-		if (this.exportingJSON || this.pointer < this.data.length && currentTick - this.lastTick >= this.getDelta()) {
+		exportJSON = exportJSON || false;
+		if (exportJSON || this.pointer < this.data.length && currentTick - this.lastTick >= this.getDelta()) {
 			let event = this.parseEvent();
 
 			if (this.enabled) return event;

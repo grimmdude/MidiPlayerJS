@@ -1963,7 +1963,6 @@ var Player = function () {
 		this.tick = 0;
 		this.lastTick = null;
 		this.inLoop = false;
-		this.exportingJSON = false;
 		this.JSON = [];
 
 		this.eventHandler = eventHandler;
@@ -2079,7 +2078,7 @@ var Player = function () {
 		}
 	}, {
 		key: 'playLoop',
-		value: function playLoop() {
+		value: function playLoop(exportJSON) {
 			if (!this.inLoop) {
 				this.inLoop = true;
 				this.tick = this.getCurrentTick();
@@ -2090,10 +2089,13 @@ var Player = function () {
 						console.log('End of file');
 						this.stop();
 					} else {
-						//this.handleEvent(i);
-						var event = this.tracks[i].handleEvent(this.tick);
+						var event = this.tracks[i].handleEvent(this.tick, exportJSON);
 						if (event) {
-							this.emitEvent(event);
+							if (exportJSON) {
+								this.JSON.push(event);
+							} else {
+								this.emitEvent(event);
+							}
 						}
 					}
 				}
@@ -2146,30 +2148,27 @@ var Player = function () {
 	}, {
 		key: 'exportJSON',
 		value: function exportJSON() {
-			this.exportingJSON = true;
 			var i = 0;
-			while (i < 10) {
-				this.playLoop();
+			while (i < 100) {
+				this.playLoop(true);
 				i++;
 			}
 
 			this.stop();
 
-			//console.log(this.JSON);
-			this.exportingJSON = false;
+			console.log(this.JSON);
 		}
 	}, {
 		key: 'bytesProcessed',
 		value: function bytesProcessed() {
 			// Currently assume header chunk is strictly 14 bytes
-			return 14 + this.tracks.length * 8 + this.pointers.reduce(function (a, b) {
-				return a + b;
+			return 14 + this.tracks.length * 8 + this.tracks.reduce(function (a, b) {
+				return a.pointer + b.pointer;
 			}, 0);
 		}
 	}, {
 		key: 'endOfFile',
 		value: function endOfFile() {
-			return false;
 			return this.bytesProcessed() == this.buffer.length;
 		}
 	}, {
@@ -2182,13 +2181,7 @@ var Player = function () {
 		value: function emitEvent(event) {
 			// Grab tempo if available.
 			if (event.hasOwnProperty('name') && event.name === 'Set Tempo') this.tempo = event.data;
-
-			if (this.exportingJSON) {
-				this.JSON.push(event);
-				console.log(event);
-			} else if (typeof this.eventHandler === 'function') {
-				this.eventHandler(event);
-			}
+			if (typeof this.eventHandler === 'function') this.eventHandler(event);
 		}
 	}]);
 
@@ -2263,7 +2256,7 @@ var Track = function () {
 
 	}, {
 		key: 'handleEvent',
-		value: function handleEvent(currentTick) {
+		value: function handleEvent(currentTick, exportJSON) {
 			// Parse delta value
 			/*
    var track = this.tracks[trackIndex];
@@ -2272,7 +2265,8 @@ var Track = function () {
    var delta = Utils.readVarInt(track.slice(pointer, pointer + deltaByteCount));
    */
 
-			if (this.exportingJSON || this.pointer < this.data.length && currentTick - this.lastTick >= this.getDelta()) {
+			exportJSON = exportJSON || false;
+			if (exportJSON || this.pointer < this.data.length && currentTick - this.lastTick >= this.getDelta()) {
 				var _event = this.parseEvent();
 
 				if (this.enabled) return _event;

@@ -11,7 +11,6 @@ class Player {
 		this.tick = 0;
 		this.lastTick = null;
 		this.inLoop = false;
-		this.exportingJSON = false;
 		this.JSON = [];
 
 		this.eventHandler = eventHandler;
@@ -107,7 +106,7 @@ class Player {
 		});
 	}
 
-	playLoop() {
+	playLoop(exportJSON) {
 		if (!this.inLoop) {
 			this.inLoop = true;
 			this.tick = this.getCurrentTick();
@@ -119,10 +118,13 @@ class Player {
 					this.stop();
 
 				} else {
-					//this.handleEvent(i);
-					var event = this.tracks[i].handleEvent(this.tick);
+					var event = this.tracks[i].handleEvent(this.tick, exportJSON);
 					if (event) {
-						this.emitEvent(event);
+						if (exportJSON) {
+							this.JSON.push(event);
+						} else {
+							this.emitEvent(event);
+						}
 					}
 				}
 			}
@@ -170,26 +172,23 @@ class Player {
 	}
 
 	exportJSON() {
-		this.exportingJSON = true;
 		var i = 0
-		while (i < 10) {
-			this.playLoop();
+		while (i<100) {
+			this.playLoop(true);
 			i++;
 		}
 
 		this.stop();
 
-		//console.log(this.JSON);
-		this.exportingJSON = false;
+		console.log(this.JSON);
 	}
 
 	bytesProcessed() {
 		// Currently assume header chunk is strictly 14 bytes
-		return 14 + this.tracks.length * 8 + this.pointers.reduce(function(a, b) {return a+b;}, 0);
+		return 14 + this.tracks.length * 8 + this.tracks.reduce(function(a, b) {return a.pointer+b.pointer;}, 0);
 	}
 
 	endOfFile() {
-		return false;
 		return this.bytesProcessed() == this.buffer.length;
 	}
 
@@ -200,14 +199,7 @@ class Player {
 	emitEvent(event) {
 		// Grab tempo if available.
 		if (event.hasOwnProperty('name') && event.name === 'Set Tempo') this.tempo = event.data;
-
-		if (this.exportingJSON) {
-			this.JSON.push(event);
-			console.log(event);
-
-		} else if (typeof this.eventHandler === 'function') {
-			this.eventHandler(event);
-		}
+		if (typeof this.eventHandler === 'function') this.eventHandler(event);
 	}
 
 }
