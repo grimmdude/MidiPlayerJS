@@ -92,7 +92,7 @@ class Player {
 				this.lastTicks.push(0);
 				this.tracksEnabled.push(1);
 
-				this.newTracks.push(new Track(this.buffer.slice(index + 8, index + 8 + trackLength)));
+				this.newTracks.push(new Track(this.newTracks.length, this.buffer.slice(index + 8, index + 8 + trackLength)));
 			}
 		}, this);
 
@@ -135,6 +135,8 @@ class Player {
 
 				} else {
 					this.handleEvent(i);
+					var event = this.newTracks[i].handleEvent(this.tick);
+					if (event) console.log(event);
 				}
 			}
 			this.inLoop = false;
