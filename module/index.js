@@ -549,11 +549,34 @@ var Track = function () {
 			this.enabled = false;
 			return this;
 		}
+	}, {
+		key: "getCurrentByte",
+		value: function getCurrentByte() {
+			return this.data[pointer];
+		}
+	}, {
+		key: "getDeltaByteCount",
+		value: function getDeltaByteCount() {
+			// Get byte count of delta VLV
+			// http://www.ccarh.org/courses/253/handout/vlv/
+			// If byte is greater or equal to 80h (128 decimal) then the next byte 
+			// is also part of the VLV,
+			// else byte is the last byte in a VLV.
+			var currentByte = this.getCurrentByte();
+			var byteCount = 1;
+
+			while (currentByte >= 128) {
+				currentByte = this.data[pointer + byteCount];
+				byteCount++;
+			}
+
+			return byteCount;
+		}
 	}]);
 
 	return Track;
 }();
-//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIi4uL3NyYy90cmFjay5qcyJdLCJuYW1lcyI6WyJUcmFjayIsImRhdGEiLCJlbmFibGVkIiwicG9pbnRlciIsImxhc3RUaWNrIl0sIm1hcHBpbmdzIjoiOzs7Ozs7SUFBTUEsSztBQUNMLGdCQUFZQyxJQUFaLEVBQWtCO0FBQUE7O0FBQ2pCLE9BQUtDLE9BQUwsR0FBZSxJQUFmO0FBQ0EsT0FBS0MsT0FBTCxHQUFlLENBQWY7QUFDQSxPQUFLQyxRQUFMLEdBQWdCLENBQWhCO0FBQ0EsT0FBS0gsSUFBTCxHQUFZQSxJQUFaO0FBQ0E7Ozs7MkJBRVE7QUFDUixRQUFLQyxPQUFMLEdBQWUsSUFBZjtBQUNBLFVBQU8sSUFBUDtBQUNBOzs7NEJBRVM7QUFDVCxRQUFLQSxPQUFMLEdBQWUsS0FBZjtBQUNBLFVBQU8sSUFBUDtBQUNBIiwiZmlsZSI6InRyYWNrLmpzIiwic291cmNlc0NvbnRlbnQiOlsiY2xhc3MgVHJhY2tcdHtcblx0Y29uc3RydWN0b3IoZGF0YSkge1xuXHRcdHRoaXMuZW5hYmxlZCA9IHRydWU7XG5cdFx0dGhpcy5wb2ludGVyID0gMDtcblx0XHR0aGlzLmxhc3RUaWNrID0gMDtcblx0XHR0aGlzLmRhdGEgPSBkYXRhO1xuXHR9XG5cblx0ZW5hYmxlKCkge1xuXHRcdHRoaXMuZW5hYmxlZCA9IHRydWU7XG5cdFx0cmV0dXJuIHRoaXM7XG5cdH1cblxuXHRkaXNhYmxlKCkge1xuXHRcdHRoaXMuZW5hYmxlZCA9IGZhbHNlO1xuXHRcdHJldHVybiB0aGlzO1xuXHR9XG59Il19
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIi4uL3NyYy90cmFjay5qcyJdLCJuYW1lcyI6WyJUcmFjayIsImRhdGEiLCJlbmFibGVkIiwicG9pbnRlciIsImxhc3RUaWNrIiwiY3VycmVudEJ5dGUiLCJnZXRDdXJyZW50Qnl0ZSIsImJ5dGVDb3VudCJdLCJtYXBwaW5ncyI6Ijs7Ozs7O0lBQU1BLEs7QUFDTCxnQkFBWUMsSUFBWixFQUFrQjtBQUFBOztBQUNqQixPQUFLQyxPQUFMLEdBQWUsSUFBZjtBQUNBLE9BQUtDLE9BQUwsR0FBZSxDQUFmO0FBQ0EsT0FBS0MsUUFBTCxHQUFnQixDQUFoQjtBQUNBLE9BQUtILElBQUwsR0FBWUEsSUFBWjtBQUNBOzs7OzJCQUVRO0FBQ1IsUUFBS0MsT0FBTCxHQUFlLElBQWY7QUFDQSxVQUFPLElBQVA7QUFDQTs7OzRCQUVTO0FBQ1QsUUFBS0EsT0FBTCxHQUFlLEtBQWY7QUFDQSxVQUFPLElBQVA7QUFDQTs7O21DQUVnQjtBQUNoQixVQUFPLEtBQUtELElBQUwsQ0FBVUUsT0FBVixDQUFQO0FBQ0E7OztzQ0FFbUI7QUFDbkI7QUFDQTtBQUNBO0FBQ0c7QUFDQTtBQUNBLE9BQUlFLGNBQWMsS0FBS0MsY0FBTCxFQUFsQjtBQUNBLE9BQUlDLFlBQVksQ0FBaEI7O0FBRUgsVUFBT0YsZUFBZSxHQUF0QixFQUEyQjtBQUMxQkEsa0JBQWMsS0FBS0osSUFBTCxDQUFVRSxVQUFVSSxTQUFwQixDQUFkO0FBQ0FBO0FBQ0E7O0FBRUQsVUFBT0EsU0FBUDtBQUNBIiwiZmlsZSI6InRyYWNrLmpzIiwic291cmNlc0NvbnRlbnQiOlsiY2xhc3MgVHJhY2tcdHtcblx0Y29uc3RydWN0b3IoZGF0YSkge1xuXHRcdHRoaXMuZW5hYmxlZCA9IHRydWU7XG5cdFx0dGhpcy5wb2ludGVyID0gMDtcblx0XHR0aGlzLmxhc3RUaWNrID0gMDtcblx0XHR0aGlzLmRhdGEgPSBkYXRhO1xuXHR9XG5cblx0ZW5hYmxlKCkge1xuXHRcdHRoaXMuZW5hYmxlZCA9IHRydWU7XG5cdFx0cmV0dXJuIHRoaXM7XG5cdH1cblxuXHRkaXNhYmxlKCkge1xuXHRcdHRoaXMuZW5hYmxlZCA9IGZhbHNlO1xuXHRcdHJldHVybiB0aGlzO1xuXHR9XG5cblx0Z2V0Q3VycmVudEJ5dGUoKSB7XG5cdFx0cmV0dXJuIHRoaXMuZGF0YVtwb2ludGVyXTtcblx0fVxuXG5cdGdldERlbHRhQnl0ZUNvdW50KCkge1xuXHRcdC8vIEdldCBieXRlIGNvdW50IG9mIGRlbHRhIFZMVlxuXHRcdC8vIGh0dHA6Ly93d3cuY2Nhcmgub3JnL2NvdXJzZXMvMjUzL2hhbmRvdXQvdmx2L1xuXHRcdC8vIElmIGJ5dGUgaXMgZ3JlYXRlciBvciBlcXVhbCB0byA4MGggKDEyOCBkZWNpbWFsKSB0aGVuIHRoZSBuZXh0IGJ5dGUgXG5cdCAgICAvLyBpcyBhbHNvIHBhcnQgb2YgdGhlIFZMVixcblx0ICAgXHQvLyBlbHNlIGJ5dGUgaXMgdGhlIGxhc3QgYnl0ZSBpbiBhIFZMVi5cblx0ICAgXHR2YXIgY3VycmVudEJ5dGUgPSB0aGlzLmdldEN1cnJlbnRCeXRlKCk7XG5cdCAgIFx0dmFyIGJ5dGVDb3VudCA9IDE7XG5cblx0XHR3aGlsZSAoY3VycmVudEJ5dGUgPj0gMTI4KSB7XG5cdFx0XHRjdXJyZW50Qnl0ZSA9IHRoaXMuZGF0YVtwb2ludGVyICsgYnl0ZUNvdW50XTtcblx0XHRcdGJ5dGVDb3VudCsrO1xuXHRcdH1cblxuXHRcdHJldHVybiBieXRlQ291bnQ7XG5cdH1cbn0iXX0=
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
