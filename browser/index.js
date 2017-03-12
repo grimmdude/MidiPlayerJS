@@ -2068,12 +2068,14 @@ var Player = function () {
 	}, {
 		key: 'enableTrack',
 		value: function enableTrack(trackNumber) {
+			this.newTracks[trackNumber - 1].enable();
 			this.tracksEnabled[trackNumber - 1] = 1;
 			return this;
 		}
 	}, {
 		key: 'disableTrack',
 		value: function disableTrack(trackNumber) {
+			this.newTracks[trackNumber - 1].disable();
 			this.tracksEnabled[trackNumber - 1] = 0;
 			return this;
 		}
@@ -2435,16 +2437,36 @@ exports.Player = Player;
 
 "use strict";
 
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var Track = function Track(data) {
-	_classCallCheck(this, Track);
+var Track = function () {
+	function Track(data) {
+		_classCallCheck(this, Track);
 
-	this.enabled = true;
-	this.pointer = 0;
-	this.lastTick = 0;
-	this.data = data;
-};
+		this.enabled = true;
+		this.pointer = 0;
+		this.lastTick = 0;
+		this.data = data;
+	}
+
+	_createClass(Track, [{
+		key: "enable",
+		value: function enable() {
+			this.enabled = true;
+			return this;
+		}
+	}, {
+		key: "disable",
+		value: function disable() {
+			this.enabled = false;
+			return this;
+		}
+	}]);
+
+	return Track;
+}();
 
 'use strict';
 

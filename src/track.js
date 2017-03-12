@@ -5,4 +5,14 @@ class Track	{
 		this.lastTick = 0;
 		this.data = data;
 	}
+
+	enable() {
+		this.enabled = true;
+		return this;
+	}
+
+	disable() {
+		this.enabled = false;
+		return this;
+	}
 }

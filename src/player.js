@@ -100,11 +100,13 @@ class Player {
 	}
 
 	enableTrack(trackNumber) {
+		this.newTracks[trackNumber - 1].enable();
 		this.tracksEnabled[trackNumber - 1] = 1;
 		return this;
 	}
 
 	disableTrack(trackNumber) {
+		this.newTracks[trackNumber - 1].disable();
 		this.tracksEnabled[trackNumber - 1] = 0;
 		return this;
 	}
