@@ -1958,14 +1958,10 @@ var Player = function () {
 		this.format;
 		this.setIntervalId = null;
 		this.tracks = [];
-		this.tracksEnabled = []; // 0 disabled, 1 enabled
 		this.tempo = 120;
 		this.startTick = 0;
 		this.tick = 0;
-		this.lastStatuses = [];
 		this.lastTick = null;
-		this.lastTicks = [];
-		this.pointers = [];
 		this.inLoop = false;
 		this.exportingJSON = false;
 		this.JSON = [];
@@ -2047,9 +2043,6 @@ var Player = function () {
 		key: 'getTracks',
 		value: function getTracks() {
 			this.tracks = [];
-			this.pointers = [];
-			this.lastTicks = [];
-			this.tracksEnabled = [];
 			this.buffer.forEach(function (byte, index) {
 				if (Utils.bytesToLetters(this.buffer.slice(index, index + 4)) == 'MTrk') {
 					var trackLength = Utils.bytesToNumber(this.buffer.slice(index + 4, index + 8));
@@ -2151,16 +2144,6 @@ var Player = function () {
 			return this.setIntervalId > 0;
 		}
 	}, {
-		key: 'endOfTrack',
-		value: function endOfTrack(trackIndex) {
-			var pointer = this.pointers[trackIndex];
-			if (this.tracks[trackIndex][pointer + 1] == 0xff && this.tracks[trackIndex][pointer + 2] == 0x2f && this.tracks[trackIndex][pointer + 3] == 0x00) {
-				return true;
-			}
-
-			return false;
-		}
-	}, {
 		key: 'exportJSON',
 		value: function exportJSON() {
 			this.exportingJSON = true;
@@ -2186,6 +2169,7 @@ var Player = function () {
 	}, {
 		key: 'endOfFile',
 		value: function endOfFile() {
+			return false;
 			return this.bytesProcessed() == this.buffer.length;
 		}
 	}, {
@@ -2474,6 +2458,15 @@ var Track = function () {
 			}
 
 			return eventJson;
+		}
+	}, {
+		key: 'endOfTrack',
+		value: function endOfTrack() {
+			if (this.data[this.pointer + 1] == 0xff && this.data[this.pointer + 2] == 0x2f && this.data[this.pointer + 3] == 0x00) {
+				return true;
+			}
+
+			return false;
 		}
 	}]);
 

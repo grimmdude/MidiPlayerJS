@@ -234,4 +234,12 @@ class Track	{
 
 		return eventJson;
 	}
+
+	endOfTrack() {
+		if (this.data[this.pointer + 1] == 0xff && this.data[this.pointer + 2] == 0x2f && this.data[this.pointer + 3] == 0x00) {
+			return true;
+		}
+
+		return false;
+	}
 }
