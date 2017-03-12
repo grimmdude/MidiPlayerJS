@@ -17,7 +17,7 @@
   },
   "scripts": {
     "test": "mocha",
-    "build": "babel src --out-file ./module/index.js && npm run browser && ls -l ./module/",
+    "build": "babel src --out-file ./module/index.js && npm run browser && ls -l ./module/ && npm test",
     "browser": "browserify -r ./module/index.js:MidiPlayer > ./browser/index.js && uglifyjs ./browser/index.js -m > ./browser/index.min.js"
   },
    "repository": {

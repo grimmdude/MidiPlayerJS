@@ -1,0 +1,19 @@
+{
+  "name": "midiplayerjs-demo",
+  "version": "1.0.0",
+  "description": "A web based MIDI player using MidiPlayerJS engine.",
+  "main": "index.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "midi",
+    "music"
+  ],
+  "author": "Garrett Grimm",
+  "license": "MIT",
+  "dependencies": {
+    "react": "^15.4.2",
+    "react-dom": "^15.4.2"
+  }
+}

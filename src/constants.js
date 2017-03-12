@@ -9,7 +9,7 @@ var Constants = {
 	var counter = 0;
 
 	// All available octaves.
-	for (var i = -1; i <= 9; i++) {
+	for (let i = -1; i <= 9; i++) {
 		allNotes.forEach(function(noteGroup) {
 			noteGroup.forEach(function(note) {Constants.NOTES[counter] = note + i});
 			counter ++;

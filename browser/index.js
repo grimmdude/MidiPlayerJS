@@ -1925,13 +1925,18 @@ var Constants = {
 	var counter = 0;
 
 	// All available octaves.
-	for (var i = -1; i <= 9; i++) {
+
+	var _loop = function _loop(i) {
 		allNotes.forEach(function (noteGroup) {
 			noteGroup.forEach(function (note) {
 				Constants.NOTES[counter] = note + i;
 			});
 			counter++;
 		});
+	};
+
+	for (var i = -1; i <= 9; i++) {
+		_loop(i);
 	}
 })();
 
@@ -1953,6 +1958,7 @@ var Player = function () {
 		this.format;
 		this.setIntervalId = null;
 		this.tracks = [];
+		this.newTracks = [];
 		this.tracksEnabled = []; // 0 disabled, 1 enabled
 		this.tempo = 120;
 		this.startTick = 0;
@@ -1961,6 +1967,9 @@ var Player = function () {
 		this.lastTick = null;
 		this.lastTicks = [];
 		this.pointers = [];
+		this.inLoop = false;
+		this.exportingJSON = false;
+		this.JSON = [];
 
 		this.eventHandler = eventHandler;
 	}
@@ -1996,6 +2005,11 @@ var Player = function () {
 
 			this.buffer = ia;
 			return this.fileLoaded();
+		}
+	}, {
+		key: 'getFilesize',
+		value: function getFilesize() {
+			return this.buffer ? this.buffer.length : 0;
 		}
 	}, {
 		key: 'fileLoaded',
@@ -2044,6 +2058,8 @@ var Player = function () {
 					this.pointers.push(0);
 					this.lastTicks.push(0);
 					this.tracksEnabled.push(1);
+
+					this.newTracks.push(new Track(this.buffer.slice(index + 8, index + 8 + trackLength)));
 				}
 			}, this);
 
@@ -2077,17 +2093,20 @@ var Player = function () {
 	}, {
 		key: 'playLoop',
 		value: function playLoop() {
-			this.tick = this.getCurrentTick();
+			if (!this.inLoop) {
+				this.inLoop = true;
+				this.tick = this.getCurrentTick();
 
-			for (var i = 0; i <= this.tracks.length - 1; i++) {
-				//console.log(me.tick)
-				// Handle next event
-				if (this.endOfFile()) {
-					console.log('End of file');
-					this.stop();
-				} else {
-					this.handleEvent(i);
+				for (var i = 0; i <= this.tracks.length - 1; i++) {
+					// Handle next event
+					if (this.endOfFile()) {
+						console.log('End of file');
+						this.stop();
+					} else {
+						this.handleEvent(i);
+					}
 				}
+				this.inLoop = false;
 			}
 
 			//window.requestAnimationFrame(this.playLoop.bind(this));
@@ -2107,10 +2126,10 @@ var Player = function () {
 			var deltaByteCount = this.getDeltaByteCount(trackIndex);
 			var delta = Utils.readVarInt(track.slice(pointer, pointer + deltaByteCount));
 
-			if (this.pointers[trackIndex] < track.length && this.tick - this.lastTicks[trackIndex] >= delta) {
-				var event = this.parseEvent(trackIndex, deltaByteCount);
+			if (this.exportingJSON || this.pointers[trackIndex] < track.length && this.tick - this.lastTicks[trackIndex] >= delta) {
+				var _event = this.parseEvent(trackIndex, deltaByteCount);
 
-				if (this.tracksEnabled[trackIndex] == 1) this.emitEvent(event);
+				if (this.tracksEnabled[trackIndex] == 1) this.emitEvent(_event);
 
 				// Recursively call this function for each event ahead that has 0 delta time?
 			}
@@ -2118,6 +2137,7 @@ var Player = function () {
 	}, {
 		key: 'play',
 		value: function play() {
+			//this.exportJSON();return;
 			if (this.setIntervalId) {
 				console.log('Already playing...');
 				return false;
@@ -2166,12 +2186,32 @@ var Player = function () {
 			return false;
 		}
 	}, {
-		key: 'endOfFile',
-		value: function endOfFile() {
+		key: 'exportJSON',
+		value: function exportJSON() {
+			this.exportingJSON = true;
+			var i = 0;
+			while (i < 10) {
+				this.playLoop();
+				i++;
+			}
+
+			this.stop();
+
+			//console.log(this.JSON);
+			this.exportingJSON = false;
+		}
+	}, {
+		key: 'bytesProcessed',
+		value: function bytesProcessed() {
 			// Currently assume header chunk is strictly 14 bytes
 			return 14 + this.tracks.length * 8 + this.pointers.reduce(function (a, b) {
 				return a + b;
-			}, 0) == this.buffer.length;
+			}, 0);
+		}
+	}, {
+		key: 'endOfFile',
+		value: function endOfFile() {
+			return this.bytesProcessed() == this.buffer.length;
 		}
 	}, {
 		key: 'getDeltaByteCount',
@@ -2201,7 +2241,12 @@ var Player = function () {
 	}, {
 		key: 'emitEvent',
 		value: function emitEvent(event) {
-			if (typeof this.eventHandler === 'function') this.eventHandler(event);
+			if (this.exportingJSON) {
+				this.JSON.push(event);
+				console.log(event);
+			} else if (typeof this.eventHandler === 'function') {
+				this.eventHandler(event);
+			}
 		}
 
 		// Parses event into JSON and advances pointer for the track
@@ -2387,6 +2432,19 @@ var Player = function () {
 }();
 
 exports.Player = Player;
+
+"use strict";
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var Track = function Track(data) {
+	_classCallCheck(this, Track);
+
+	this.enabled = true;
+	this.pointer = 0;
+	this.lastTick = 0;
+	this.data = data;
+};
 
 'use strict';
 

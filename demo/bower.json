@@ -1,0 +1,31 @@
+{
+  "name": "MidiPlayerJS Demo",
+  "homepage": "https://github.com/grimmdude/MidiPlayerJS",
+  "authors": [
+    "Garrett Grimm <garrett@grimmdude.com>"
+  ],
+  "description": "A web based MIDI player using MidiPlayerJS engine.",
+  "main": "index.html",
+  "keywords": [
+    "music",
+    "midi"
+  ],
+  "license": "MIT",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "skeleton" : "2.0.4",
+    "bootstrap": "~3.2.0",
+    "modernizr":"latest",
+    "angular":"1.6.*",
+    "underscore":"1.7.0",
+    "raphael":"2.1.1",
+    "js-cookie":"latest"
+  }
+}
