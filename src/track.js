@@ -10,6 +10,14 @@ class Track	{
 		this.events = [];
 	}
 
+	reset() {
+		this.enabled = true;
+		this.pointer = 0;
+		this.lastTick = 0;
+		this.lastStatus = null;
+		this.delta = 0;
+	}
+
 	enable() {
 		this.enabled = true;
 		return this;
@@ -48,11 +56,11 @@ class Track	{
 	/**
 	 * Handles event within a given track starting at specified index
 	 * @param currentTick
-	 * @param BOOL exportEvents If set events will be parsed and returned regardless of time.
+	 * @param BOOL dryRun If set events will be parsed and returned regardless of time.
 	 */
-	handleEvent(currentTick, exportEvents) {
-		exportEvents = exportEvents || false;
-		if (this.pointer < this.data.length && (exportEvents || currentTick - this.lastTick >= this.getDelta())) {
+	handleEvent(currentTick, dryRun) {
+		dryRun = dryRun || false;
+		if (this.pointer < this.data.length && (dryRun || currentTick - this.lastTick >= this.getDelta())) {
 			let event = this.parseEvent();
 			if (this.enabled) return event;
 			// Recursively call this function for each event ahead that has 0 delta time?

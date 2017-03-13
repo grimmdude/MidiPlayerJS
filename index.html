@@ -17,7 +17,7 @@
 		</style>
 	</head>
 	<body>
-		<div class="container">
+		<div class="container" style="padding-top:12px;">
 			<div class="row">
 				<div class="twelve columns">
 					<h1>&#9836; MidiPlayerJS</h1>
@@ -27,6 +27,9 @@
 						<input type="file" onchange="loadFile()" onclick="Player.stop()" />
 					</p>
 					<p id="loading">Loading soundfont...</p>
+					<div style="border:1px solid #ccc;margin-bottom:12px;background:#f7f7f7;">
+						<div id="play-bar" style="height:20px;background:#33C3F0;width:0%;"></div>
+					</div>
 					<p>
 						<button class="button button-primary" id="play-button" onclick="Player.isPlaying() ? pause() : play();" disabled="disabled">Play</button>
 						<button class="button" onclick="stop()">Stop</button>

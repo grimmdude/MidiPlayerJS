@@ -11,6 +11,8 @@ class Player {
 		this.tick = 0;
 		this.lastTick = null;
 		this.inLoop = false;
+		this.totalTicks = 0;
+		this.events = [];
 
 		this.eventHandler = eventHandler;
 	}
@@ -48,7 +50,7 @@ class Player {
 
 	fileLoaded() {
 		if (!this.validate()) throw 'Invalid MIDI file; should start with MThd';
-		return this.getDivision().getFormat().getTracks();
+		return this.getDivision().getFormat().getTracks().dryRun();
 	}
 
 	// First four bytes should be MThd
@@ -99,28 +101,22 @@ class Player {
 		return this;
 	}
 
-	getTotalTicks() {
-		this.tracks[0].forEach(function(track, index) {
-			console.log(index);
-		});
-	}
-
-	playLoop(exportEvents) {
+	playLoop(dryRun) {
+		//console.log(this.getSongPercentRemaining())
 		if (!this.inLoop) {
 			this.inLoop = true;
 			this.tick = this.getCurrentTick();
-			//console.log(this.tick)
 			
 			for (let i = 0; i <= this.tracks.length - 1; i++) {
 				// Handle next event
-				if (!exportEvents && this.endOfFile()) {
+				if (!dryRun && this.endOfFile()) {
 					console.log('End of file');
 					this.stop();
 
 				} else {
-					var event = this.tracks[i].handleEvent(this.tick, exportEvents);
+					var event = this.tracks[i].handleEvent(this.tick, dryRun);
 					if (event) {
-						if (!exportEvents) {
+						if (!dryRun) {
 							this.emitEvent(event);
 						}
 					}
@@ -133,7 +129,6 @@ class Player {
 	}
 
 	play() {
-		//return this.exportEvents();
 		if (this.setIntervalId) {
 			console.log('Already playing...');
 			return false;
@@ -142,6 +137,7 @@ class Player {
 		// Initialize
 		if (!this.startTime) this.startTime = (new Date()).getTime();
 
+		console.log('Song time: ' + this.getSongTime() + ' minutes / ' + this.totalTicks + ' ticks.');
 		// Start play loop
 		//window.requestAnimationFrame(this.playLoop.bind(this));
 		this.setIntervalId = setInterval(this.playLoop.bind(this), 10);
@@ -169,12 +165,25 @@ class Player {
 		return this.setIntervalId > 0;
 	}
 
-	exportEvents() {
+	dryRun() {
+		// Reset tracks first
+		this.resetTracks();
 		while (!this.endOfFile()) this.playLoop(true);
-		var events = this.getEvents();
+		this.events = this.getEvents();
+		this.totalTicks = this.getTotalTicks();
+		this.startTick = 0;
+		this.startTime = 0;
 
-		this.stop();
-		return events;
+		// Leave tracks in pristine condish
+		this.resetTracks();
+
+		return this;
+	}
+
+	resetTracks() {
+		this.tracks.forEach(function(track) {
+			track.reset();
+		})
 	}
 
 	getEvents() {
@@ -190,7 +199,15 @@ class Player {
 	}
 
 	getSongTime() {
-		return this.getTotalTicks() / this.division / this.tempo;
+		return this.totalTicks / this.division / this.tempo * 60;
+	}
+
+	getSongTimeRemaining() {
+		return Math.round((this.totalTicks - this.tick) / this.division / this.tempo * 60);
+	}
+
+	getSongPercentRemaining() {
+		return Math.round(this.getSongTimeRemaining() / this.getSongTime() * 100);
 	}
 
 	bytesProcessed() {

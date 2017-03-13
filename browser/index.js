@@ -1963,6 +1963,8 @@ var Player = function () {
 		this.tick = 0;
 		this.lastTick = null;
 		this.inLoop = false;
+		this.totalTicks = 0;
+		this.events = [];
 
 		this.eventHandler = eventHandler;
 	}
@@ -2008,7 +2010,7 @@ var Player = function () {
 		key: 'fileLoaded',
 		value: function fileLoaded() {
 			if (!this.validate()) throw 'Invalid MIDI file; should start with MThd';
-			return this.getDivision().getFormat().getTracks();
+			return this.getDivision().getFormat().getTracks().dryRun();
 		}
 
 		// First four bytes should be MThd
@@ -2069,29 +2071,22 @@ var Player = function () {
 			return this;
 		}
 	}, {
-		key: 'getTotalTicks',
-		value: function getTotalTicks() {
-			this.tracks[0].forEach(function (track, index) {
-				console.log(index);
-			});
-		}
-	}, {
 		key: 'playLoop',
-		value: function playLoop(exportEvents) {
+		value: function playLoop(dryRun) {
+			//console.log(this.getSongPercentRemaining())
 			if (!this.inLoop) {
 				this.inLoop = true;
 				this.tick = this.getCurrentTick();
-				//console.log(this.tick)
 
 				for (var i = 0; i <= this.tracks.length - 1; i++) {
 					// Handle next event
-					if (!exportEvents && this.endOfFile()) {
+					if (!dryRun && this.endOfFile()) {
 						console.log('End of file');
 						this.stop();
 					} else {
-						var event = this.tracks[i].handleEvent(this.tick, exportEvents);
+						var event = this.tracks[i].handleEvent(this.tick, dryRun);
 						if (event) {
-							if (!exportEvents) {
+							if (!dryRun) {
 								this.emitEvent(event);
 							}
 						}
@@ -2105,7 +2100,6 @@ var Player = function () {
 	}, {
 		key: 'play',
 		value: function play() {
-			//return this.exportEvents();
 			if (this.setIntervalId) {
 				console.log('Already playing...');
 				return false;
@@ -2114,6 +2108,7 @@ var Player = function () {
 			// Initialize
 			if (!this.startTime) this.startTime = new Date().getTime();
 
+			console.log('Song time: ' + this.getSongTime() + ' minutes / ' + this.totalTicks + ' ticks.');
 			// Start play loop
 			//window.requestAnimationFrame(this.playLoop.bind(this));
 			this.setIntervalId = setInterval(this.playLoop.bind(this), 10);
@@ -2144,14 +2139,28 @@ var Player = function () {
 			return this.setIntervalId > 0;
 		}
 	}, {
-		key: 'exportEvents',
-		value: function exportEvents() {
+		key: 'dryRun',
+		value: function dryRun() {
+			// Reset tracks first
+			this.resetTracks();
 			while (!this.endOfFile()) {
 				this.playLoop(true);
-			}var events = this.getEvents();
+			}this.events = this.getEvents();
+			this.totalTicks = this.getTotalTicks();
+			this.startTick = 0;
+			this.startTime = 0;
 
-			this.stop();
-			return events;
+			// Leave tracks in pristine condish
+			this.resetTracks();
+
+			return this;
+		}
+	}, {
+		key: 'resetTracks',
+		value: function resetTracks() {
+			this.tracks.forEach(function (track) {
+				track.reset();
+			});
 		}
 	}, {
 		key: 'getEvents',
@@ -2170,7 +2179,17 @@ var Player = function () {
 	}, {
 		key: 'getSongTime',
 		value: function getSongTime() {
-			return this.getTotalTicks() / this.division / this.tempo;
+			return this.totalTicks / this.division / this.tempo * 60;
+		}
+	}, {
+		key: 'getSongTimeRemaining',
+		value: function getSongTimeRemaining() {
+			return Math.round((this.totalTicks - this.tick) / this.division / this.tempo * 60);
+		}
+	}, {
+		key: 'getSongPercentRemaining',
+		value: function getSongPercentRemaining() {
+			return Math.round(this.getSongTimeRemaining() / this.getSongTime() * 100);
 		}
 	}, {
 		key: 'bytesProcessed',
@@ -2225,6 +2244,15 @@ var Track = function () {
 	}
 
 	_createClass(Track, [{
+		key: 'reset',
+		value: function reset() {
+			this.enabled = true;
+			this.pointer = 0;
+			this.lastTick = 0;
+			this.lastStatus = null;
+			this.delta = 0;
+		}
+	}, {
 		key: 'enable',
 		value: function enable() {
 			this.enabled = true;
@@ -2268,14 +2296,14 @@ var Track = function () {
 		/**
    * Handles event within a given track starting at specified index
    * @param currentTick
-   * @param BOOL exportEvents If set events will be parsed and returned regardless of time.
+   * @param BOOL dryRun If set events will be parsed and returned regardless of time.
    */
 
 	}, {
 		key: 'handleEvent',
-		value: function handleEvent(currentTick, exportEvents) {
-			exportEvents = exportEvents || false;
-			if (this.pointer < this.data.length && (exportEvents || currentTick - this.lastTick >= this.getDelta())) {
+		value: function handleEvent(currentTick, dryRun) {
+			dryRun = dryRun || false;
+			if (this.pointer < this.data.length && (dryRun || currentTick - this.lastTick >= this.getDelta())) {
 				var _event = this.parseEvent();
 				if (this.enabled) return _event;
 				// Recursively call this function for each event ahead that has 0 delta time?
