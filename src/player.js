@@ -11,7 +11,6 @@ class Player {
 		this.tick = 0;
 		this.lastTick = null;
 		this.inLoop = false;
-		this.JSON = [];
 
 		this.eventHandler = eventHandler;
 	}
@@ -106,23 +105,22 @@ class Player {
 		});
 	}
 
-	playLoop(exportJSON) {
+	playLoop(exportEvents) {
 		if (!this.inLoop) {
 			this.inLoop = true;
 			this.tick = this.getCurrentTick();
+			//console.log(this.tick)
 			
 			for (let i = 0; i <= this.tracks.length - 1; i++) {
 				// Handle next event
-				if (this.endOfFile()) {
+				if (!exportEvents && this.endOfFile()) {
 					console.log('End of file');
 					this.stop();
 
 				} else {
-					var event = this.tracks[i].handleEvent(this.tick, exportJSON);
+					var event = this.tracks[i].handleEvent(this.tick, exportEvents);
 					if (event) {
-						if (exportJSON) {
-							this.JSON.push(event);
-						} else {
+						if (!exportEvents) {
 							this.emitEvent(event);
 						}
 					}
@@ -135,7 +133,7 @@ class Player {
 	}
 
 	play() {
-		//this.exportJSON();return;
+		//return this.exportEvents();
 		if (this.setIntervalId) {
 			console.log('Already playing...');
 			return false;
@@ -171,21 +169,33 @@ class Player {
 		return this.setIntervalId > 0;
 	}
 
-	exportJSON() {
-		var i = 0
-		while (i<100) {
-			this.playLoop(true);
-			i++;
-		}
+	exportEvents() {
+		while (!this.endOfFile()) this.playLoop(true);
+		var events = this.getEvents();
 
 		this.stop();
+		return events;
+	}
 
-		console.log(this.JSON);
+	getEvents() {
+		return this.tracks.map(function(track) {
+			return track.events;
+		});
+	}
+
+	getTotalTicks() {
+		return Math.max.apply(null, this.tracks.map(function(track) {
+			return track.delta;
+		}));
+	}
+
+	getSongTime() {
+		return this.getTotalTicks() / this.division / this.tempo;
 	}
 
 	bytesProcessed() {
 		// Currently assume header chunk is strictly 14 bytes
-		return 14 + this.tracks.length * 8 + this.tracks.reduce(function(a, b) {return a.pointer+b.pointer;}, 0);
+		return 14 + this.tracks.length * 8 + this.tracks.reduce(function(a, b) {return {pointer: a.pointer + b.pointer};}, {pointer: 0}).pointer;
 	}
 
 	endOfFile() {

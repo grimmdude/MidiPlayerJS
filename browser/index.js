@@ -1963,7 +1963,6 @@ var Player = function () {
 		this.tick = 0;
 		this.lastTick = null;
 		this.inLoop = false;
-		this.JSON = [];
 
 		this.eventHandler = eventHandler;
 	}
@@ -2078,22 +2077,21 @@ var Player = function () {
 		}
 	}, {
 		key: 'playLoop',
-		value: function playLoop(exportJSON) {
+		value: function playLoop(exportEvents) {
 			if (!this.inLoop) {
 				this.inLoop = true;
 				this.tick = this.getCurrentTick();
+				//console.log(this.tick)
 
 				for (var i = 0; i <= this.tracks.length - 1; i++) {
 					// Handle next event
-					if (this.endOfFile()) {
+					if (!exportEvents && this.endOfFile()) {
 						console.log('End of file');
 						this.stop();
 					} else {
-						var event = this.tracks[i].handleEvent(this.tick, exportJSON);
+						var event = this.tracks[i].handleEvent(this.tick, exportEvents);
 						if (event) {
-							if (exportJSON) {
-								this.JSON.push(event);
-							} else {
+							if (!exportEvents) {
 								this.emitEvent(event);
 							}
 						}
@@ -2107,7 +2105,7 @@ var Player = function () {
 	}, {
 		key: 'play',
 		value: function play() {
-			//this.exportJSON();return;
+			//return this.exportEvents();
 			if (this.setIntervalId) {
 				console.log('Already playing...');
 				return false;
@@ -2146,25 +2144,41 @@ var Player = function () {
 			return this.setIntervalId > 0;
 		}
 	}, {
-		key: 'exportJSON',
-		value: function exportJSON() {
-			var i = 0;
-			while (i < 100) {
+		key: 'exportEvents',
+		value: function exportEvents() {
+			while (!this.endOfFile()) {
 				this.playLoop(true);
-				i++;
-			}
+			}var events = this.getEvents();
 
 			this.stop();
-
-			console.log(this.JSON);
+			return events;
+		}
+	}, {
+		key: 'getEvents',
+		value: function getEvents() {
+			return this.tracks.map(function (track) {
+				return track.events;
+			});
+		}
+	}, {
+		key: 'getTotalTicks',
+		value: function getTotalTicks() {
+			return Math.max.apply(null, this.tracks.map(function (track) {
+				return track.delta;
+			}));
+		}
+	}, {
+		key: 'getSongTime',
+		value: function getSongTime() {
+			return this.getTotalTicks() / this.division / this.tempo;
 		}
 	}, {
 		key: 'bytesProcessed',
 		value: function bytesProcessed() {
 			// Currently assume header chunk is strictly 14 bytes
 			return 14 + this.tracks.length * 8 + this.tracks.reduce(function (a, b) {
-				return a.pointer + b.pointer;
-			}, 0);
+				return { pointer: a.pointer + b.pointer };
+			}, { pointer: 0 }).pointer;
 		}
 	}, {
 		key: 'endOfFile',
@@ -2206,6 +2220,8 @@ var Track = function () {
 		this.lastStatus = null;
 		this.index = index;
 		this.data = data;
+		this.delta = 0;
+		this.events = [];
 	}
 
 	_createClass(Track, [{
@@ -2251,26 +2267,17 @@ var Track = function () {
 
 		/**
    * Handles event within a given track starting at specified index
-   * @param trackIndex
+   * @param currentTick
+   * @param BOOL exportEvents If set events will be parsed and returned regardless of time.
    */
 
 	}, {
 		key: 'handleEvent',
-		value: function handleEvent(currentTick, exportJSON) {
-			// Parse delta value
-			/*
-   var track = this.tracks[trackIndex];
-   var pointer = this.pointers[trackIndex];
-   var deltaByteCount = this.getDeltaByteCount(trackIndex);
-   var delta = Utils.readVarInt(track.slice(pointer, pointer + deltaByteCount));
-   */
-
-			exportJSON = exportJSON || false;
-			if (exportJSON || this.pointer < this.data.length && currentTick - this.lastTick >= this.getDelta()) {
+		value: function handleEvent(currentTick, exportEvents) {
+			exportEvents = exportEvents || false;
+			if (this.pointer < this.data.length && (exportEvents || currentTick - this.lastTick >= this.getDelta())) {
 				var _event = this.parseEvent();
-
 				if (this.enabled) return _event;
-
 				// Recursively call this function for each event ahead that has 0 delta time?
 			}
 
@@ -2447,9 +2454,14 @@ var Track = function () {
 						// Pitch Bend
 						eventJson.name = 'Pitch Bend';
 						this.pointer += deltaByteCount + 3;
+					} else {
+						eventJson.name = 'Unknown.  Pointer: ' + this.pointer.toString() + ' ' + eventStartIndex.toString() + ' ' + this.data.length;
 					}
 				}
 			}
+
+			this.delta += eventJson.delta;
+			this.events.push(eventJson);
 
 			return eventJson;
 		}

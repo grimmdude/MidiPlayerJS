@@ -6,6 +6,8 @@ class Track	{
 		this.lastStatus = null;
 		this.index = index;
 		this.data = data;
+		this.delta = 0;
+		this.events = [];
 	}
 
 	enable() {
@@ -45,23 +47,14 @@ class Track	{
 
 	/**
 	 * Handles event within a given track starting at specified index
-	 * @param trackIndex
+	 * @param currentTick
+	 * @param BOOL exportEvents If set events will be parsed and returned regardless of time.
 	 */
-	handleEvent(currentTick, exportJSON) {
-		// Parse delta value
-		/*
-		var track = this.tracks[trackIndex];
-		var pointer = this.pointers[trackIndex];
-		var deltaByteCount = this.getDeltaByteCount(trackIndex);
-		var delta = Utils.readVarInt(track.slice(pointer, pointer + deltaByteCount));
-		*/
-
-		exportJSON = exportJSON || false;
-		if (exportJSON || this.pointer < this.data.length && currentTick - this.lastTick >= this.getDelta()) {
+	handleEvent(currentTick, exportEvents) {
+		exportEvents = exportEvents || false;
+		if (this.pointer < this.data.length && (exportEvents || currentTick - this.lastTick >= this.getDelta())) {
 			let event = this.parseEvent();
-
 			if (this.enabled) return event;
-
 			// Recursively call this function for each event ahead that has 0 delta time?
 		}
 
@@ -229,9 +222,15 @@ class Track	{
 					// Pitch Bend
 					eventJson.name = 'Pitch Bend';
 					this.pointer += deltaByteCount + 3;
+
+				} else {
+					eventJson.name = 'Unknown.  Pointer: ' + this.pointer.toString() + ' '  + eventStartIndex.toString() + ' ' + this.data.length;
 				}
 			}
 		}
+
+		this.delta += eventJson.delta;
+		this.events.push(eventJson);
 
 		return eventJson;
 	}
