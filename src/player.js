@@ -1,5 +1,6 @@
 class Player {
 	constructor(eventHandler, buffer) {
+		this.sampleRate = 5; // milliseconds
 		this.startTime = 0;
 		this.buffer = buffer || null;
 		this.division;
@@ -102,13 +103,13 @@ class Player {
 	}
 
 	playLoop(dryRun) {
-		//console.log(this.getSongPercentRemaining())
 		if (!this.inLoop) {
 			this.inLoop = true;
 			this.tick = this.getCurrentTick();
 			
 			for (let i = 0; i <= this.tracks.length - 1; i++) {
 				// Handle next event
+				//console.log(dryRun);
 				if (!dryRun && this.endOfFile()) {
 					console.log('End of file');
 					this.stop();
@@ -137,10 +138,9 @@ class Player {
 		// Initialize
 		if (!this.startTime) this.startTime = (new Date()).getTime();
 
-		console.log('Song time: ' + this.getSongTime() + ' minutes / ' + this.totalTicks + ' ticks.');
 		// Start play loop
 		//window.requestAnimationFrame(this.playLoop.bind(this));
-		this.setIntervalId = setInterval(this.playLoop.bind(this), 10);
+		this.setIntervalId = setInterval(this.playLoop.bind(this), this.sampleRate);
 
 		return this;
 	}
@@ -158,7 +158,8 @@ class Player {
 		this.setIntervalId = false;
 		this.startTick = 0;
 		this.startTime = 0;
-		return this.fileLoaded();
+		this.resetTracks();
+		return this;
 	}
 
 	isPlaying() {
@@ -176,6 +177,7 @@ class Player {
 
 		// Leave tracks in pristine condish
 		this.resetTracks();
+		console.log('Song time: ' + this.getSongTime() + ' minutes / ' + this.totalTicks + ' ticks.');
 
 		return this;
 	}

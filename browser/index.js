@@ -1952,6 +1952,7 @@ var Player = function () {
 	function Player(eventHandler, buffer) {
 		_classCallCheck(this, Player);
 
+		this.sampleRate = 5; // milliseconds
 		this.startTime = 0;
 		this.buffer = buffer || null;
 		this.division;
@@ -2073,13 +2074,13 @@ var Player = function () {
 	}, {
 		key: 'playLoop',
 		value: function playLoop(dryRun) {
-			//console.log(this.getSongPercentRemaining())
 			if (!this.inLoop) {
 				this.inLoop = true;
 				this.tick = this.getCurrentTick();
 
 				for (var i = 0; i <= this.tracks.length - 1; i++) {
 					// Handle next event
+					//console.log(dryRun);
 					if (!dryRun && this.endOfFile()) {
 						console.log('End of file');
 						this.stop();
@@ -2108,10 +2109,9 @@ var Player = function () {
 			// Initialize
 			if (!this.startTime) this.startTime = new Date().getTime();
 
-			console.log('Song time: ' + this.getSongTime() + ' minutes / ' + this.totalTicks + ' ticks.');
 			// Start play loop
 			//window.requestAnimationFrame(this.playLoop.bind(this));
-			this.setIntervalId = setInterval(this.playLoop.bind(this), 10);
+			this.setIntervalId = setInterval(this.playLoop.bind(this), this.sampleRate);
 
 			return this;
 		}
@@ -2131,7 +2131,8 @@ var Player = function () {
 			this.setIntervalId = false;
 			this.startTick = 0;
 			this.startTime = 0;
-			return this.fileLoaded();
+			this.resetTracks();
+			return this;
 		}
 	}, {
 		key: 'isPlaying',
@@ -2152,6 +2153,7 @@ var Player = function () {
 
 			// Leave tracks in pristine condish
 			this.resetTracks();
+			console.log('Song time: ' + this.getSongTime() + ' minutes / ' + this.totalTicks + ' ticks.');
 
 			return this;
 		}
