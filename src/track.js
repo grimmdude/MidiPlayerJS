@@ -7,6 +7,7 @@ class Track	{
 		this.index = index;
 		this.data = data;
 		this.delta = 0;
+		this.runningDelta = 0;
 		this.events = [];
 	}
 
@@ -16,6 +17,7 @@ class Track	{
 		this.lastTick = 0;
 		this.lastStatus = null;
 		this.delta = 0;
+		this.runningDelta = 0;
 	}
 
 	enable() {
@@ -77,6 +79,8 @@ class Track	{
 		eventJson.track = this.index + 1;
 		eventJson.delta = this.getDelta();
 		this.lastTick = this.lastTick + eventJson.delta;
+		this.runningDelta += eventJson.delta;
+		eventJson.tick = this.runningDelta;
 
 		//eventJson.raw = event;
 		if (this.data[eventStartIndex] == 0xff) {

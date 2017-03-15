@@ -52,7 +52,6 @@ Soundfont.instrument(ac, 'https://raw.githubusercontent.com/gleitz/midi-js-sound
 				if (event.name == 'Note on') {
 					instrument.play(event.noteName, ac.currentTime, {gain:event.velocity/100});
 					//document.querySelector('#track-' + event.track + ' code').innerHTML = JSON.stringify(event);
-
 				}
 
 				document.getElementById('tempo-display').innerHTML = this.tempo;
@@ -74,6 +73,7 @@ Soundfont.instrument(ac, 'https://raw.githubusercontent.com/gleitz/midi-js-sound
 			if (event.name == 'Note on' && event.velocity > 0) {
 				instrument.play(event.noteName, ac.currentTime, {gain:event.velocity/100});
 				//document.querySelector('#track-' + event.track + ' code').innerHTML = JSON.stringify(event);
+				//console.log(event);
 			}
 
 			document.getElementById('tempo-display').innerHTML = this.tempo;
