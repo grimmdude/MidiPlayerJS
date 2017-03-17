@@ -4,10 +4,10 @@
   "description": "A javascript library to play MIDI files",
   "main": "module/index.js",
   "scripts": {
+    "pretest": "npm run build",
     "test": "mocha",
-    "build": "mkdir -p module browser && babel src --out-file ./module/index.js && npm run browser && ls -l ./module/ && npm test",
-    "browser": "browserify -r ./module/index.js:MidiPlayer > ./browser/index.js && uglifyjs ./browser/index.js -m > ./browser/index.min.js",
-    "prepublish": "npm run build"
+    "build": "mkdir -p module browser && babel src --out-file ./module/index.js && npm run browser && ls -l ./module/",
+    "browser": "browserify -r ./module/index.js:MidiPlayer > ./browser/index.js && uglifyjs ./browser/index.js -m > ./browser/index.min.js"
   },
   "devDependencies": {
     "babel-cli": "^6.14.0",
