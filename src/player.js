@@ -183,21 +183,15 @@ class Player {
 	}
 
 	resetTracks() {
-		this.tracks.forEach(function(track) {
-			track.reset();
-		})
+		this.tracks.forEach(track => track.reset());
 	}
 
 	getEvents() {
-		return this.tracks.map(function(track) {
-			return track.events;
-		});
+		return this.tracks.map(track => track.events);
 	}
 
 	getTotalTicks() {
-		return Math.max.apply(null, this.tracks.map(function(track) {
-			return track.delta;
-		}));
+		return Math.max.apply(null, this.tracks.map((track) => track.delta));
 	}
 
 	getSongTime() {
@@ -214,7 +208,7 @@ class Player {
 
 	bytesProcessed() {
 		// Currently assume header chunk is strictly 14 bytes
-		return 14 + this.tracks.length * 8 + this.tracks.reduce(function(a, b) {return {pointer: a.pointer + b.pointer};}, {pointer: 0}).pointer;
+		return 14 + this.tracks.length * 8 + this.tracks.reduce((a, b) => {return {pointer: a.pointer + b.pointer}}, {pointer: 0}).pointer;
 	}
 
 	endOfFile() {

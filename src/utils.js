@@ -6,11 +6,7 @@ class Utils {
 
 	static bytesToHex(byteArray) {
 		var hex = [];
-
-		byteArray.forEach(function(byte) {
-			hex.push(Utils.byteToHex(byte));
-		});
-
+		byteArray.forEach(byte => hex.push(Utils.byteToHex(byte)));
 		return hex.join('');
 	}
 
@@ -24,10 +20,7 @@ class Utils {
 
 	static bytesToLetters(byteArray) {
 		var letters = [];
-		byteArray.forEach(function(byte) {
-			letters.push(String.fromCharCode(byte));
-		});
-
+		byteArray.forEach(byte => letters.push(String.fromCharCode(byte)));
 		return letters.join('');
 	}
 
@@ -37,7 +30,7 @@ class Utils {
 
 	static readVarInt(byteArray) {
 		var result = 0;
-		byteArray.forEach(function(number) {
+		byteArray.forEach(number => {
 			var b = number;
 			if (b & 0x80) {
 				result += (b & 0x7f);
