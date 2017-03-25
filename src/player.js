@@ -14,8 +14,9 @@ class Player {
 		this.inLoop = false;
 		this.totalTicks = 0;
 		this.events = [];
+		this.eventListeners = {};
 
-		this.eventHandler = eventHandler;
+		if (typeof(eventHandler) === 'function') this.on('midiEvent', eventHandler);
 	}
 
 	// Only for NodeJS
@@ -107,22 +108,20 @@ class Player {
 			this.inLoop = true;
 			this.tick = this.getCurrentTick();
 			
-			for (let i = 0; i <= this.tracks.length - 1; i++) {
+			this.tracks.forEach(function(track) {
 				// Handle next event
-				//console.log(dryRun);
 				if (!dryRun && this.endOfFile()) {
-					console.log('End of file');
+					this.triggerPlayerEvent('endOfFile');
 					this.stop();
 
 				} else {
-					var event = this.tracks[i].handleEvent(this.tick, dryRun);
-					if (event) {
-						if (!dryRun) {
-							this.emitEvent(event);
-						}
-					}
+					var event = track.handleEvent(this.tick, dryRun);
+					if (event && !dryRun) this.emitEvent(event);
 				}
-			}
+
+			}, this);
+
+			if (!dryRun) this.triggerPlayerEvent('playing', {tick: this.tick});
 			this.inLoop = false;
 		}
 
@@ -177,8 +176,9 @@ class Player {
 
 		// Leave tracks in pristine condish
 		this.resetTracks();
-		console.log('Song time: ' + this.getSongTime() + ' seconds / ' + this.totalTicks + ' ticks.');
+		//console.log('Song time: ' + this.getSongTime() + ' seconds / ' + this.totalTicks + ' ticks.');
 
+		this.triggerPlayerEvent('fileLoaded', this);
 		return this;
 	}
 
@@ -222,7 +222,18 @@ class Player {
 	emitEvent(event) {
 		// Grab tempo if available.
 		if (event.hasOwnProperty('name') && event.name === 'Set Tempo') this.tempo = event.data;
-		if (typeof this.eventHandler === 'function') this.eventHandler(event);
+		this.triggerPlayerEvent('midiEvent', event);
+	}
+
+	on(playerEvent, fn) {
+		if (!this.eventListeners.hasOwnProperty(playerEvent)) this.eventListeners[playerEvent] = [];
+		this.eventListeners[playerEvent].push(fn);
+		return this;
+	}
+
+	triggerPlayerEvent(playerEvent, data) {
+		if (this.eventListeners.hasOwnProperty(playerEvent)) this.eventListeners[playerEvent].forEach(fn => fn(data || {}));
+		return this;
 	}
 
 }
