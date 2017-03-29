@@ -37,7 +37,7 @@ class Track	{
 	getDeltaByteCount() {
 		// Get byte count of delta VLV
 		// http://www.ccarh.org/courses/253/handout/vlv/
-		// If byte is greater or equal to 80h (128 decimal) then the next byte 
+		// If byte is greater or equal to 80h (128 decimal) then the next byte
 	    // is also part of the VLV,
 	   	// else byte is the last byte in a VLV.
 	   	var currentByte = this.getCurrentByte();
@@ -177,12 +177,14 @@ class Track	{
 				eventJson.noteNumber = this.data[eventStartIndex];
 				eventJson.noteName = Constants.NOTES[this.data[eventStartIndex]];
 				eventJson.velocity = this.data[eventStartIndex + 1];
-				
+
 				if (this.lastStatus <= 0x8f) {
 					eventJson.name = 'Note off';
+					eventJson.channel = this.lastStatus - 0x80 + 1;
 
 				} else if (this.lastStatus <= 0x9f) {
 					eventJson.name = 'Note on';
+					eventJson.channel = this.lastStatus - 0x90 + 1;
 				}
 
 				this.pointer += deltaByteCount + 2;
@@ -193,6 +195,7 @@ class Track	{
 				if (this.data[eventStartIndex] <= 0x8f) {
 					// Note off
 					eventJson.name = 'Note off';
+					eventJson.channel = this.lastStatus - 0x80 + 1;
 					eventJson.noteNumber = this.data[eventStartIndex + 1];
 					eventJson.noteName = Constants.NOTES[this.data[eventStartIndex + 1]];
 					eventJson.velocity = Math.round(this.data[eventStartIndex + 2] / 127 * 100);
@@ -201,6 +204,7 @@ class Track	{
 				} else if (this.data[eventStartIndex] <= 0x9f) {
 					// Note on
 					eventJson.name = 'Note on';
+					eventJson.channel = this.lastStatus - 0x90 + 1;
 					eventJson.noteNumber = this.data[eventStartIndex + 1];
 					eventJson.noteName = Constants.NOTES[this.data[eventStartIndex + 1]];
 					eventJson.velocity = Math.round(this.data[eventStartIndex + 2] / 127 * 100);
@@ -209,6 +213,7 @@ class Track	{
 				} else if (this.data[eventStartIndex] <= 0xaf) {
 					// Polyphonic Key Pressure
 					eventJson.name = 'Polyphonic Key Pressure';
+					eventJson.channel = this.lastStatus - 0xa0 + 1;
 					eventJson.note = Constants.NOTES[this.data[eventStartIndex + 1]];
 					eventJson.pressure = event[2];
 					this.pointer += deltaByteCount + 3;
@@ -216,6 +221,7 @@ class Track	{
 				} else if (this.data[eventStartIndex] <= 0xbf) {
 					// Controller Change
 					eventJson.name = 'Controller Change';
+					eventJson.channel = this.lastStatus - 0xb0 + 1;
 					eventJson.number = this.data[eventStartIndex + 1];
 					eventJson.value = this.data[eventStartIndex + 2];
 					this.pointer += deltaByteCount + 3;
@@ -223,16 +229,19 @@ class Track	{
 				} else if (this.data[eventStartIndex] <= 0xcf) {
 					// Program Change
 					eventJson.name = 'Program Change';
+					eventJson.channel = this.lastStatus - 0xc0 + 1;
 					this.pointer += deltaByteCount + 2;
 
 				} else if (this.data[eventStartIndex] <= 0xdf) {
 					// Channel Key Pressure
 					eventJson.name = 'Channel Key Pressure';
+					eventJson.channel = this.lastStatus - 0xd0 + 1;
 					this.pointer += deltaByteCount + 2;
 
 				} else if (this.data[eventStartIndex] <= 0xef) {
 					// Pitch Bend
 					eventJson.name = 'Pitch Bend';
+					eventJson.channel = this.lastStatus - 0xe0 + 1;
 					this.pointer += deltaByteCount + 3;
 
 				} else {
