@@ -128,7 +128,11 @@ class Player {
 		//window.requestAnimationFrame(this.playLoop.bind(this));
 	}
 
-	play(startTime) {
+	play() {
+		this.playWithStartTime(new Date().getTime());
+	}
+
+	playWithStartTime(startTime) {
 		if (this.setIntervalId) {
 			console.log('Already playing...');
 			return false;
