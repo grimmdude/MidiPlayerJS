@@ -142,7 +142,7 @@ class Player {
 		if (!this.startTime) {
 			this.startTime = startTime || (new Date()).getTime();
 		}
-		console.log(`MidiPlayer.js: play() with startTime: ` + this.startTime);
+		//console.log(`MidiPlayer.js: play() with startTime: ` + this.startTime);
 
 		// Start play loop
 		//window.requestAnimationFrame(this.playLoop.bind(this));
