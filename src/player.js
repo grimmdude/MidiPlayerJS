@@ -128,11 +128,12 @@ class Player {
 		//window.requestAnimationFrame(this.playLoop.bind(this));
 	}
 
-	play() {
-		this.playWithStartTime(new Date().getTime());
+	setStartTime(startTime) {
+		this.startTime = startTime;
+		console.log(`MidiPlayer.js: setStartTime: ` + this.startTime);
 	}
 
-	playWithStartTime(startTime) {
+	play() {
 		if (this.setIntervalId) {
 			console.log('Already playing...');
 			return false;
@@ -140,9 +141,8 @@ class Player {
 
 		// Initialize
 		if (!this.startTime) {
-			this.startTime = startTime || (new Date()).getTime();
+			this.startTime = (new Date()).getTime();
 		}
-		//console.log(`MidiPlayer.js: play() with startTime: ` + this.startTime);
 
 		// Start play loop
 		//window.requestAnimationFrame(this.playLoop.bind(this));
