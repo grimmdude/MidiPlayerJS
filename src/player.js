@@ -64,9 +64,9 @@ class Player {
 		/*
 		MIDI files come in 3 variations:
 		Format 0 which contain a single track
-		Format 1 which contain one or more simultaneous tracks 
+		Format 1 which contain one or more simultaneous tracks
 		(ie all tracks are to be played simultaneously).
-		Format 2 which contain one or more independant tracks 
+		Format 2 which contain one or more independant tracks
 		(ie each track is to be played independantly of the others).
 		return Utils.bytesToNumber(this.buffer.slice(8, 10));
 		*/
@@ -107,7 +107,7 @@ class Player {
 		if (!this.inLoop) {
 			this.inLoop = true;
 			this.tick = this.getCurrentTick();
-			
+
 			this.tracks.forEach(function(track) {
 				// Handle next event
 				if (!dryRun && this.endOfFile()) {
@@ -128,6 +128,11 @@ class Player {
 		//window.requestAnimationFrame(this.playLoop.bind(this));
 	}
 
+	setStartTime(startTime) {
+		this.startTime = startTime;
+		console.log(`MidiPlayer.js: setStartTime: ` + this.startTime);
+	}
+
 	play() {
 		if (this.setIntervalId) {
 			console.log('Already playing...');
@@ -135,7 +140,9 @@ class Player {
 		}
 
 		// Initialize
-		if (!this.startTime) this.startTime = (new Date()).getTime();
+		if (!this.startTime) {
+			this.startTime = (new Date()).getTime();
+		}
 
 		// Start play loop
 		//window.requestAnimationFrame(this.playLoop.bind(this));

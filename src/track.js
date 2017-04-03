@@ -37,7 +37,7 @@ class Track	{
 	getDeltaByteCount() {
 		// Get byte count of delta VLV
 		// http://www.ccarh.org/courses/253/handout/vlv/
-		// If byte is greater or equal to 80h (128 decimal) then the next byte 
+		// If byte is greater or equal to 80h (128 decimal) then the next byte
 	    // is also part of the VLV,
 	   	// else byte is the last byte in a VLV.
 	   	var currentByte = this.getCurrentByte();
@@ -71,6 +71,20 @@ class Track	{
 		return null;
 	}
 
+	getStringData(eventStartIndex) {
+		var currentByte = this.pointer;
+		var byteCount = 1;
+		// while (currentByte >= 128) {
+		// 	currentByte = this.data[this.pointer + byteCount];
+		// 	byteCount++;
+		// }
+		//var vlv = byteCount;
+		var length = Utils.readVarInt(this.data.slice(eventStartIndex + 2, eventStartIndex + 2 + byteCount));
+		var stringLength = length;
+
+		return Utils.bytesToLetters(this.data.slice(eventStartIndex + byteCount + 2, eventStartIndex + byteCount + length + 2));
+	}
+
 	// Parses event into JSON and advances pointer for the track
 	parseEvent() {
 		var eventStartIndex = this.pointer + this.getDeltaByteCount();
@@ -96,35 +110,33 @@ class Track	{
 					break;
 				case 0x01: // Text Event
 					eventJson.name = 'Text Event';
+					eventJson.string = this.getStringData(eventStartIndex);
 					break;
 				case 0x02: // Copyright Notice
 					eventJson.name = 'Copyright Notice';
 					break;
 				case 0x03: // Sequence/Track Name
 					eventJson.name = 'Sequence/Track Name';
-					// Get vlv length
-					var currentByte = this.pointer;
-					var byteCount = 1;
-					while (currentByte >= 128) {
-						currentByte = this.data[this.pointer + byteCount];
-						byteCount++;
-					}
-					eventJson.vlv = byteCount;
-					var length = Utils.readVarInt(this.data.slice(eventStartIndex + 2, eventStartIndex + 2 + byteCount));
-					eventJson.stringLength = length;
-					eventJson.string = Utils.bytesToLetters(this.data.slice(eventStartIndex + byteCount + 2, eventStartIndex + byteCount + length + 2));
+					eventJson.string = this.getStringData(eventStartIndex);
 					break;
 				case 0x04: // Instrument Name
 					eventJson.name = 'Instrument Name';
+					eventJson.string = this.getStringData(eventStartIndex);
 					break;
 				case 0x05: // Lyric
 					eventJson.name = 'Lyric';
+					eventJson.string = this.getStringData(eventStartIndex);
 					break;
 				case 0x06: // Marker
 					eventJson.name = 'Marker';
 					break;
 				case 0x07: // Cue Point
 					eventJson.name = 'Cue Point';
+					eventJson.string = this.getStringData(eventStartIndex);
+					break;
+				case 0x09: // Device Name
+					eventJson.name = 'Device Name';
+					eventJson.string = this.getStringData(eventStartIndex);
 					break;
 				case 0x20: // MIDI Channel Prefix
 					eventJson.name = 'MIDI Channel Prefix';
@@ -177,12 +189,14 @@ class Track	{
 				eventJson.noteNumber = this.data[eventStartIndex];
 				eventJson.noteName = Constants.NOTES[this.data[eventStartIndex]];
 				eventJson.velocity = this.data[eventStartIndex + 1];
-				
+
 				if (this.lastStatus <= 0x8f) {
 					eventJson.name = 'Note off';
+					eventJson.channel = this.lastStatus - 0x80 + 1;
 
 				} else if (this.lastStatus <= 0x9f) {
 					eventJson.name = 'Note on';
+					eventJson.channel = this.lastStatus - 0x90 + 1;
 				}
 
 				this.pointer += deltaByteCount + 2;
@@ -193,6 +207,7 @@ class Track	{
 				if (this.data[eventStartIndex] <= 0x8f) {
 					// Note off
 					eventJson.name = 'Note off';
+					eventJson.channel = this.lastStatus - 0x80 + 1;
 					eventJson.noteNumber = this.data[eventStartIndex + 1];
 					eventJson.noteName = Constants.NOTES[this.data[eventStartIndex + 1]];
 					eventJson.velocity = Math.round(this.data[eventStartIndex + 2] / 127 * 100);
@@ -201,6 +216,7 @@ class Track	{
 				} else if (this.data[eventStartIndex] <= 0x9f) {
 					// Note on
 					eventJson.name = 'Note on';
+					eventJson.channel = this.lastStatus - 0x90 + 1;
 					eventJson.noteNumber = this.data[eventStartIndex + 1];
 					eventJson.noteName = Constants.NOTES[this.data[eventStartIndex + 1]];
 					eventJson.velocity = Math.round(this.data[eventStartIndex + 2] / 127 * 100);
@@ -209,6 +225,7 @@ class Track	{
 				} else if (this.data[eventStartIndex] <= 0xaf) {
 					// Polyphonic Key Pressure
 					eventJson.name = 'Polyphonic Key Pressure';
+					eventJson.channel = this.lastStatus - 0xa0 + 1;
 					eventJson.note = Constants.NOTES[this.data[eventStartIndex + 1]];
 					eventJson.pressure = event[2];
 					this.pointer += deltaByteCount + 3;
@@ -216,6 +233,7 @@ class Track	{
 				} else if (this.data[eventStartIndex] <= 0xbf) {
 					// Controller Change
 					eventJson.name = 'Controller Change';
+					eventJson.channel = this.lastStatus - 0xb0 + 1;
 					eventJson.number = this.data[eventStartIndex + 1];
 					eventJson.value = this.data[eventStartIndex + 2];
 					this.pointer += deltaByteCount + 3;
@@ -223,16 +241,19 @@ class Track	{
 				} else if (this.data[eventStartIndex] <= 0xcf) {
 					// Program Change
 					eventJson.name = 'Program Change';
+					eventJson.channel = this.lastStatus - 0xc0 + 1;
 					this.pointer += deltaByteCount + 2;
 
 				} else if (this.data[eventStartIndex] <= 0xdf) {
 					// Channel Key Pressure
 					eventJson.name = 'Channel Key Pressure';
+					eventJson.channel = this.lastStatus - 0xd0 + 1;
 					this.pointer += deltaByteCount + 2;
 
 				} else if (this.data[eventStartIndex] <= 0xef) {
 					// Pitch Bend
 					eventJson.name = 'Pitch Bend';
+					eventJson.channel = this.lastStatus - 0xe0 + 1;
 					this.pointer += deltaByteCount + 3;
 
 				} else {
