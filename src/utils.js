@@ -1,3 +1,6 @@
+/**
+ * Containing misc static utility methods.
+ */
 class Utils {
 	static byteToHex(byte) {
 		// Ensure hex string always has two chars
