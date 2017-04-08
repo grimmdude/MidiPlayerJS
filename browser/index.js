@@ -1914,8 +1914,11 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
 (function (Buffer){
 'use strict';
 
+/**
+ * Constants used in player.
+ */
 var Constants = {
-	VERSION: '1.0.4',
+	VERSION: '1.1.0',
 	NOTES: []
 };
 
@@ -1948,6 +1951,11 @@ var _createClass = function () { function defineProperties(target, props) { for 
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
+/**
+ * Main player class.  Contains methods to load files, start, stop.
+ * @param {function} - Callback to fire for each MIDI event.  Can also be added with on('midiEvent', fn)
+ * @param {array} - Array buffer of MIDI file (optional).
+ */
 var Player = function () {
 	function Player(eventHandler, buffer) {
 		_classCallCheck(this, Player);
@@ -1971,7 +1979,11 @@ var Player = function () {
 		if (typeof eventHandler === 'function') this.on('midiEvent', eventHandler);
 	}
 
-	// Only for NodeJS
+	/**
+  * Load a file into the player (Node.js only).
+  * @param {string} path - Path of file.
+  * @return {Player}
+  */
 
 
 	_createClass(Player, [{
@@ -1981,16 +1993,30 @@ var Player = function () {
 			this.buffer = fs.readFileSync(path);
 			return this.fileLoaded();
 		}
+
+		/**
+   * Load an array buffer into the player.
+   * @param {array} arrayBuffer - Array buffer of file to be loaded.
+   * @return {Player}
+   */
+
 	}, {
 		key: 'loadArrayBuffer',
 		value: function loadArrayBuffer(arrayBuffer) {
 			this.buffer = new Uint8Array(arrayBuffer);
 			return this.fileLoaded();
 		}
+
+		/**
+   * Load a data URI into the player.
+   * @param {string} dataUri - Data URI to be loaded.
+   * @return {Player}
+   */
+
 	}, {
 		key: 'loadDataUri',
 		value: function loadDataUri(dataUri) {
-			// convert base64 to raw binary data held in a string
+			// convert base64 to raw binary data held in a string.
 			// doesn't handle URLEncoded DataURIs - see SO answer #6850276 for code that does this
 			var byteString = Utils.atob(dataUri.split(',')[1]);
 
@@ -2003,11 +2029,23 @@ var Player = function () {
 			this.buffer = ia;
 			return this.fileLoaded();
 		}
+
+		/**
+   * Get filesize of loaded file in number of bytes.
+   * @return {number} - The filesize.
+   */
+
 	}, {
 		key: 'getFilesize',
 		value: function getFilesize() {
 			return this.buffer ? this.buffer.length : 0;
 		}
+
+		/**
+   * Parses file for necessary information and does a dry run to calculate total length.
+   * @return {Player}
+   */
+
 	}, {
 		key: 'fileLoaded',
 		value: function fileLoaded() {
@@ -2015,22 +2053,31 @@ var Player = function () {
 			return this.getDivision().getFormat().getTracks().dryRun();
 		}
 
-		// First four bytes should be MThd
+		/**
+   * Validates file using simple means - first four bytes should == MThd.
+   * @return {boolean}
+   */
 
 	}, {
 		key: 'validate',
 		value: function validate() {
 			return Utils.bytesToLetters(this.buffer.slice(0, 4)) === 'MThd';
 		}
+
+		/**
+   * Gets MIDI file format for loaded file.
+   * @return {Player}
+   */
+
 	}, {
 		key: 'getFormat',
 		value: function getFormat() {
 			/*
    MIDI files come in 3 variations:
    Format 0 which contain a single track
-   Format 1 which contain one or more simultaneous tracks 
+   Format 1 which contain one or more simultaneous tracks
    (ie all tracks are to be played simultaneously).
-   Format 2 which contain one or more independant tracks 
+   Format 2 which contain one or more independant tracks
    (ie each track is to be played independantly of the others).
    return Utils.bytesToNumber(this.buffer.slice(8, 10));
    */
@@ -2039,7 +2086,10 @@ var Player = function () {
 			return this;
 		}
 
-		// Parses out tracks and places them in this.tracks and initializes this.pointers
+		/**
+   * Parses out tracks, places them in this.tracks and initializes this.pointers
+   * @return {Player}
+   */
 
 	}, {
 		key: 'getTracks',
@@ -2054,24 +2104,50 @@ var Player = function () {
 
 			return this;
 		}
+
+		/**
+   * Enables a track for playing.
+   * @param {number} trackNumber - Track number
+   * @return {Player}
+   */
+
 	}, {
 		key: 'enableTrack',
 		value: function enableTrack(trackNumber) {
 			this.tracks[trackNumber - 1].enable();
 			return this;
 		}
+
+		/**
+   * Disables a track for playing.
+   * @param {number} - Track number
+   * @return {Player}
+   */
+
 	}, {
 		key: 'disableTrack',
 		value: function disableTrack(trackNumber) {
 			this.tracks[trackNumber - 1].disable();
 			return this;
 		}
+
+		/**
+   * Gets quarter note division of loaded MIDI file.
+   * @return {Player}
+   */
+
 	}, {
 		key: 'getDivision',
 		value: function getDivision() {
 			this.division = Utils.bytesToNumber(this.buffer.slice(12, 14));
 			return this;
 		}
+
+		/**
+   * The main play loop.
+   * @param {boolean} - Indicates whether or not this is being called simply for parsing purposes.  Disregards timing if so.
+   */
+
 	}, {
 		key: 'playLoop',
 		value: function playLoop(dryRun) {
@@ -2093,19 +2169,37 @@ var Player = function () {
 				if (!dryRun) this.triggerPlayerEvent('playing', { tick: this.tick });
 				this.inLoop = false;
 			}
-
-			//window.requestAnimationFrame(this.playLoop.bind(this));
 		}
+
+		/**
+   * Setter for startTime.
+   * @param {number} - UTC timestamp
+   */
+
+	}, {
+		key: 'setStartTime',
+		value: function setStartTime(startTime) {
+			this.startTime = startTime;
+			console.log('MidiPlayer.js: setStartTime: ' + this.startTime);
+		}
+
+		/**
+   * Start playing loaded MIDI file if not already playing.
+   * @return {Player}
+   */
+
 	}, {
 		key: 'play',
 		value: function play() {
-			if (this.setIntervalId) {
+			if (this.isPlaying()) {
 				console.log('Already playing...');
 				return false;
 			}
 
 			// Initialize
-			if (!this.startTime) this.startTime = new Date().getTime();
+			if (!this.startTime) {
+				this.startTime = new Date().getTime();
+			}
 
 			// Start play loop
 			//window.requestAnimationFrame(this.playLoop.bind(this));
@@ -2113,6 +2207,12 @@ var Player = function () {
 
 			return this;
 		}
+
+		/**
+   * Pauses playback if playing.
+   * @return {Player}
+   */
+
 	}, {
 		key: 'pause',
 		value: function pause() {
@@ -2122,6 +2222,12 @@ var Player = function () {
 			this.startTime = 0;
 			return this;
 		}
+
+		/**
+   * Stops playback if playing.
+   * @return {Player}
+   */
+
 	}, {
 		key: 'stop',
 		value: function stop() {
@@ -2132,11 +2238,23 @@ var Player = function () {
 			this.resetTracks();
 			return this;
 		}
+
+		/**
+   * Checks if player is playing
+   * @return {boolean}
+   */
+
 	}, {
 		key: 'isPlaying',
 		value: function isPlaying() {
 			return this.setIntervalId > 0;
 		}
+
+		/**
+   * Plays the loaded MIDI file without regard for timing and saves events in this.events.  Essentially used as a parser.
+   * @return {Player}
+   */
+
 	}, {
 		key: 'dryRun',
 		value: function dryRun() {
@@ -2156,13 +2274,26 @@ var Player = function () {
 			this.triggerPlayerEvent('fileLoaded', this);
 			return this;
 		}
+
+		/**
+   * Resets play pointers for all tracks.
+   * @return {Player}
+   */
+
 	}, {
 		key: 'resetTracks',
 		value: function resetTracks() {
 			this.tracks.forEach(function (track) {
 				return track.reset();
 			});
+			return this;
 		}
+
+		/**
+   * Gets an array of events grouped by track.
+   * @return {array}
+   */
+
 	}, {
 		key: 'getEvents',
 		value: function getEvents() {
@@ -2170,6 +2301,12 @@ var Player = function () {
 				return track.events;
 			});
 		}
+
+		/**
+   * Gets total number of ticks in the loaded MIDI file.
+   * @return {number}
+   */
+
 	}, {
 		key: 'getTotalTicks',
 		value: function getTotalTicks() {
@@ -2177,21 +2314,45 @@ var Player = function () {
 				return track.delta;
 			}));
 		}
+
+		/**
+   * Gets song duration in seconds.
+   * @return {number}
+   */
+
 	}, {
 		key: 'getSongTime',
 		value: function getSongTime() {
 			return this.totalTicks / this.division / this.tempo * 60;
 		}
+
+		/**
+   * Gets remaining number of seconds in playback.
+   * @return {number}
+   */
+
 	}, {
 		key: 'getSongTimeRemaining',
 		value: function getSongTimeRemaining() {
 			return Math.round((this.totalTicks - this.tick) / this.division / this.tempo * 60);
 		}
+
+		/**
+   * Gets remaining percent of playback.
+   * @return {number}
+   */
+
 	}, {
 		key: 'getSongPercentRemaining',
 		value: function getSongPercentRemaining() {
 			return Math.round(this.getSongTimeRemaining() / this.getSongTime() * 100);
 		}
+
+		/**
+   * Number of bytes processed in the loaded MIDI file.
+   * @return {number}
+   */
+
 	}, {
 		key: 'bytesProcessed',
 		value: function bytesProcessed() {
@@ -2200,23 +2361,51 @@ var Player = function () {
 				return { pointer: a.pointer + b.pointer };
 			}, { pointer: 0 }).pointer;
 		}
+
+		/**
+   * Determines if the player pointer has reached the end of the loaded MIDI file.
+   * @return {boolean}
+   */
+
 	}, {
 		key: 'endOfFile',
 		value: function endOfFile() {
 			return this.bytesProcessed() == this.buffer.length;
 		}
+
+		/**
+   * Gets the current tick number in playback.
+   * @return {number}
+   */
+
 	}, {
 		key: 'getCurrentTick',
 		value: function getCurrentTick() {
 			return Math.round((new Date().getTime() - this.startTime) / 1000 * (this.division * (this.tempo / 60))) + this.startTick;
 		}
+
+		/**
+   * Sends MIDI event out to listener.
+   * @param {object}
+   * @return {Player}
+   */
+
 	}, {
 		key: 'emitEvent',
 		value: function emitEvent(event) {
 			// Grab tempo if available.
 			if (event.hasOwnProperty('name') && event.name === 'Set Tempo') this.tempo = event.data;
 			this.triggerPlayerEvent('midiEvent', event);
+			return this;
 		}
+
+		/**
+   * Subscribes events to listeners 
+   * @param {string} - Name of event to subscribe to.
+   * @param {function} - Callback to fire when event is broadcast.
+   * @return {Player}
+   */
+
 	}, {
 		key: 'on',
 		value: function on(playerEvent, fn) {
@@ -2224,6 +2413,14 @@ var Player = function () {
 			this.eventListeners[playerEvent].push(fn);
 			return this;
 		}
+
+		/**
+   * Broadcasts event to trigger subscribed callbacks.
+   * @param {string} - Name of event.
+   * @param {object} - Data to be passed to subscriber callback.
+   * @return {Player}
+   */
+
 	}, {
 		key: 'triggerPlayerEvent',
 		value: function triggerPlayerEvent(playerEvent, data) {
@@ -2245,6 +2442,9 @@ var _createClass = function () { function defineProperties(target, props) { for 
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
+/**
+ * Class representing a track.  Contains methods for parsing events and keeping track of pointer.
+ */
 var Track = function () {
 	function Track(index, data) {
 		_classCallCheck(this, Track);
@@ -2260,6 +2460,12 @@ var Track = function () {
 		this.events = [];
 	}
 
+	/**
+  * Resets all stateful track informaion used during playback.
+  * @return {Track}
+  */
+
+
 	_createClass(Track, [{
 		key: 'reset',
 		value: function reset() {
@@ -2269,30 +2475,55 @@ var Track = function () {
 			this.lastStatus = null;
 			this.delta = 0;
 			this.runningDelta = 0;
+			return this;
 		}
+
+		/**
+   * Sets this track to be enabled during playback.
+   * @return {Track}
+   */
+
 	}, {
 		key: 'enable',
 		value: function enable() {
 			this.enabled = true;
 			return this;
 		}
+
+		/**
+   * Sets this track to be disabled during playback.
+   * @return {Track}
+   */
+
 	}, {
 		key: 'disable',
 		value: function disable() {
 			this.enabled = false;
 			return this;
 		}
+
+		/**
+   * Gets byte located at pointer position.
+   * @return {number}
+   */
+
 	}, {
 		key: 'getCurrentByte',
 		value: function getCurrentByte() {
 			return this.data[this.pointer];
 		}
+
+		/**
+   * Gets count of delta bytes and current pointer position.
+   * @return {number}
+   */
+
 	}, {
 		key: 'getDeltaByteCount',
 		value: function getDeltaByteCount() {
 			// Get byte count of delta VLV
 			// http://www.ccarh.org/courses/253/handout/vlv/
-			// If byte is greater or equal to 80h (128 decimal) then the next byte 
+			// If byte is greater or equal to 80h (128 decimal) then the next byte
 			// is also part of the VLV,
 			// else byte is the last byte in a VLV.
 			var currentByte = this.getCurrentByte();
@@ -2305,6 +2536,12 @@ var Track = function () {
 
 			return byteCount;
 		}
+
+		/**
+   * Get delta value at current pointer position.
+   * @return {number}
+   */
+
 	}, {
 		key: 'getDelta',
 		value: function getDelta() {
@@ -2313,8 +2550,8 @@ var Track = function () {
 
 		/**
    * Handles event within a given track starting at specified index
-   * @param currentTick
-   * @param BOOL dryRun If set events will be parsed and returned regardless of time.
+   * @param {number} currentTick
+   * @param {boolean} dryRun - If true events will be parsed and returned regardless of time.
    */
 
 	}, {
@@ -2330,7 +2567,27 @@ var Track = function () {
 			return null;
 		}
 
-		// Parses event into JSON and advances pointer for the track
+		/**
+   * Get string data from event.
+   * @param {number} eventStartIndex
+   * @return {string}
+   */
+
+	}, {
+		key: 'getStringData',
+		value: function getStringData(eventStartIndex) {
+			var currentByte = this.pointer;
+			var byteCount = 1;
+			var length = Utils.readVarInt(this.data.slice(eventStartIndex + 2, eventStartIndex + 2 + byteCount));
+			var stringLength = length;
+
+			return Utils.bytesToLetters(this.data.slice(eventStartIndex + byteCount + 2, eventStartIndex + byteCount + length + 2));
+		}
+
+		/**
+   * Parses event into JSON and advances pointer for the track
+   * @return {object}
+   */
 
 	}, {
 		key: 'parseEvent',
@@ -2360,6 +2617,7 @@ var Track = function () {
 					case 0x01:
 						// Text Event
 						eventJson.name = 'Text Event';
+						eventJson.string = this.getStringData(eventStartIndex);
 						break;
 					case 0x02:
 						// Copyright Notice
@@ -2368,25 +2626,17 @@ var Track = function () {
 					case 0x03:
 						// Sequence/Track Name
 						eventJson.name = 'Sequence/Track Name';
-						// Get vlv length
-						var currentByte = this.pointer;
-						var byteCount = 1;
-						while (currentByte >= 128) {
-							currentByte = this.data[this.pointer + byteCount];
-							byteCount++;
-						}
-						eventJson.vlv = byteCount;
-						var length = Utils.readVarInt(this.data.slice(eventStartIndex + 2, eventStartIndex + 2 + byteCount));
-						eventJson.stringLength = length;
-						eventJson.string = Utils.bytesToLetters(this.data.slice(eventStartIndex + byteCount + 2, eventStartIndex + byteCount + length + 2));
+						eventJson.string = this.getStringData(eventStartIndex);
 						break;
 					case 0x04:
 						// Instrument Name
 						eventJson.name = 'Instrument Name';
+						eventJson.string = this.getStringData(eventStartIndex);
 						break;
 					case 0x05:
 						// Lyric
 						eventJson.name = 'Lyric';
+						eventJson.string = this.getStringData(eventStartIndex);
 						break;
 					case 0x06:
 						// Marker
@@ -2395,6 +2645,12 @@ var Track = function () {
 					case 0x07:
 						// Cue Point
 						eventJson.name = 'Cue Point';
+						eventJson.string = this.getStringData(eventStartIndex);
+						break;
+					case 0x09:
+						// Device Name
+						eventJson.name = 'Device Name';
+						eventJson.string = this.getStringData(eventStartIndex);
 						break;
 					case 0x20:
 						// MIDI Channel Prefix
@@ -2456,8 +2712,10 @@ var Track = function () {
 
 					if (this.lastStatus <= 0x8f) {
 						eventJson.name = 'Note off';
+						eventJson.channel = this.lastStatus - 0x80 + 1;
 					} else if (this.lastStatus <= 0x9f) {
 						eventJson.name = 'Note on';
+						eventJson.channel = this.lastStatus - 0x90 + 1;
 					}
 
 					this.pointer += deltaByteCount + 2;
@@ -2467,6 +2725,7 @@ var Track = function () {
 					if (this.data[eventStartIndex] <= 0x8f) {
 						// Note off
 						eventJson.name = 'Note off';
+						eventJson.channel = this.lastStatus - 0x80 + 1;
 						eventJson.noteNumber = this.data[eventStartIndex + 1];
 						eventJson.noteName = Constants.NOTES[this.data[eventStartIndex + 1]];
 						eventJson.velocity = Math.round(this.data[eventStartIndex + 2] / 127 * 100);
@@ -2474,6 +2733,7 @@ var Track = function () {
 					} else if (this.data[eventStartIndex] <= 0x9f) {
 						// Note on
 						eventJson.name = 'Note on';
+						eventJson.channel = this.lastStatus - 0x90 + 1;
 						eventJson.noteNumber = this.data[eventStartIndex + 1];
 						eventJson.noteName = Constants.NOTES[this.data[eventStartIndex + 1]];
 						eventJson.velocity = Math.round(this.data[eventStartIndex + 2] / 127 * 100);
@@ -2481,26 +2741,31 @@ var Track = function () {
 					} else if (this.data[eventStartIndex] <= 0xaf) {
 						// Polyphonic Key Pressure
 						eventJson.name = 'Polyphonic Key Pressure';
+						eventJson.channel = this.lastStatus - 0xa0 + 1;
 						eventJson.note = Constants.NOTES[this.data[eventStartIndex + 1]];
 						eventJson.pressure = event[2];
 						this.pointer += deltaByteCount + 3;
 					} else if (this.data[eventStartIndex] <= 0xbf) {
 						// Controller Change
 						eventJson.name = 'Controller Change';
+						eventJson.channel = this.lastStatus - 0xb0 + 1;
 						eventJson.number = this.data[eventStartIndex + 1];
 						eventJson.value = this.data[eventStartIndex + 2];
 						this.pointer += deltaByteCount + 3;
 					} else if (this.data[eventStartIndex] <= 0xcf) {
 						// Program Change
 						eventJson.name = 'Program Change';
+						eventJson.channel = this.lastStatus - 0xc0 + 1;
 						this.pointer += deltaByteCount + 2;
 					} else if (this.data[eventStartIndex] <= 0xdf) {
 						// Channel Key Pressure
 						eventJson.name = 'Channel Key Pressure';
+						eventJson.channel = this.lastStatus - 0xd0 + 1;
 						this.pointer += deltaByteCount + 2;
 					} else if (this.data[eventStartIndex] <= 0xef) {
 						// Pitch Bend
 						eventJson.name = 'Pitch Bend';
+						eventJson.channel = this.lastStatus - 0xe0 + 1;
 						this.pointer += deltaByteCount + 3;
 					} else {
 						eventJson.name = 'Unknown.  Pointer: ' + this.pointer.toString() + ' ' + eventStartIndex.toString() + ' ' + this.data.length;
@@ -2513,6 +2778,12 @@ var Track = function () {
 
 			return eventJson;
 		}
+
+		/**
+   * Returns true if pointer has reached the end of the track.
+   * @param {boolean}
+   */
+
 	}, {
 		key: 'endOfTrack',
 		value: function endOfTrack() {
@@ -2533,6 +2804,9 @@ var _createClass = function () { function defineProperties(target, props) { for 
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
+/**
+ * Contains misc static utility methods.
+ */
 var Utils = function () {
 	function Utils() {
 		_classCallCheck(this, Utils);
@@ -2540,10 +2814,24 @@ var Utils = function () {
 
 	_createClass(Utils, null, [{
 		key: 'byteToHex',
+
+
+		/**
+   * Converts a single byte to a hex string.
+   * @param {number} byte
+   * @return {string}
+   */
 		value: function byteToHex(byte) {
 			// Ensure hex string always has two chars
 			return ('0' + byte.toString(16)).slice(-2);
 		}
+
+		/**
+   * Converts an array of bytes to a hex string.
+   * @param {array} byteArray
+   * @return {string}
+   */
+
 	}, {
 		key: 'bytesToHex',
 		value: function bytesToHex(byteArray) {
@@ -2553,16 +2841,37 @@ var Utils = function () {
 			});
 			return hex.join('');
 		}
+
+		/**
+   * Converts a hex string to a number.
+   * @param {string} hexString
+   * @return {number}
+   */
+
 	}, {
 		key: 'hexToNumber',
 		value: function hexToNumber(hexString) {
 			return parseInt(hexString, 16);
 		}
+
+		/**
+   * Converts an array of bytes to a number.
+   * @param {array} byteArray
+   * @return {number}
+   */
+
 	}, {
 		key: 'bytesToNumber',
 		value: function bytesToNumber(byteArray) {
 			return Utils.hexToNumber(Utils.bytesToHex(byteArray));
 		}
+
+		/**
+   * Converts an array of bytes to letters.
+   * @param {array} byteArray
+   * @return {string}
+   */
+
 	}, {
 		key: 'bytesToLetters',
 		value: function bytesToLetters(byteArray) {
@@ -2572,11 +2881,25 @@ var Utils = function () {
 			});
 			return letters.join('');
 		}
+
+		/**
+   * Converts a decimal to it's binary representation.
+   * @param {number} dec
+   * @return {string}
+   */
+
 	}, {
 		key: 'decToBinary',
 		value: function decToBinary(dec) {
 			return (dec >>> 0).toString(2);
 		}
+
+		/**
+   * Reads a variable length value.
+   * @param {array} byteArray
+   * @return {number}
+   */
+
 	}, {
 		key: 'readVarInt',
 		value: function readVarInt(byteArray) {
@@ -2594,6 +2917,13 @@ var Utils = function () {
 
 			return result;
 		}
+
+		/**
+   * Decodes base-64 encoded string 
+   * @param {string} string
+   * @return {string}
+   */
+
 	}, {
 		key: 'atob',
 		value: function (_atob) {
