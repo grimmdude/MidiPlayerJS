@@ -14,6 +14,10 @@ class Track	{
 		this.events = [];
 	}
 
+	/**
+	 * Resets all stateful track informaion used during playback.
+	 * @return {Track}
+	 */
 	reset() {
 		this.enabled = true;
 		this.pointer = 0;
@@ -21,22 +25,39 @@ class Track	{
 		this.lastStatus = null;
 		this.delta = 0;
 		this.runningDelta = 0;
+		return this;
 	}
 
+	/**
+	 * Sets this track to be enabled during playback.
+	 * @return {Track}
+	 */
 	enable() {
 		this.enabled = true;
 		return this;
 	}
 
+	/**
+	 * Sets this track to be disabled during playback.
+	 * @return {Track}
+	 */
 	disable() {
 		this.enabled = false;
 		return this;
 	}
 
+	/**
+	 * Gets byte located at pointer position.
+	 * @return {number}
+	 */
 	getCurrentByte() {
 		return this.data[this.pointer];
 	}
 
+	/**
+	 * Gets count of delta bytes and current pointer position.
+	 * @return {number}
+	 */
 	getDeltaByteCount() {
 		// Get byte count of delta VLV
 		// http://www.ccarh.org/courses/253/handout/vlv/
@@ -54,14 +75,18 @@ class Track	{
 		return byteCount;
 	}
 
+	/**
+	 * Get delta value at current pointer position.
+	 * @return {number}
+	 */
 	getDelta() {
 		return Utils.readVarInt(this.data.slice(this.pointer, this.pointer + this.getDeltaByteCount()));
 	}
 
 	/**
 	 * Handles event within a given track starting at specified index
-	 * @param currentTick
-	 * @param BOOL dryRun If set events will be parsed and returned regardless of time.
+	 * @param {number} currentTick
+	 * @param {boolean} dryRun - If true events will be parsed and returned regardless of time.
 	 */
 	handleEvent(currentTick, dryRun) {
 		dryRun = dryRun || false;
@@ -74,21 +99,24 @@ class Track	{
 		return null;
 	}
 
+	/**
+	 * Get string data from event.
+	 * @param {number} eventStartIndex
+	 * @return {string}
+	 */
 	getStringData(eventStartIndex) {
 		var currentByte = this.pointer;
 		var byteCount = 1;
-		// while (currentByte >= 128) {
-		// 	currentByte = this.data[this.pointer + byteCount];
-		// 	byteCount++;
-		// }
-		//var vlv = byteCount;
 		var length = Utils.readVarInt(this.data.slice(eventStartIndex + 2, eventStartIndex + 2 + byteCount));
 		var stringLength = length;
 
 		return Utils.bytesToLetters(this.data.slice(eventStartIndex + byteCount + 2, eventStartIndex + byteCount + length + 2));
 	}
 
-	// Parses event into JSON and advances pointer for the track
+	/**
+	 * Parses event into JSON and advances pointer for the track
+	 * @return {object}
+	 */
 	parseEvent() {
 		var eventStartIndex = this.pointer + this.getDeltaByteCount();
 		var eventJson = {};
@@ -271,6 +299,10 @@ class Track	{
 		return eventJson;
 	}
 
+	/**
+	 * Returns true if pointer has reached the end of the track.
+	 * @param {boolean}
+	 */
 	endOfTrack() {
 		if (this.data[this.pointer + 1] == 0xff && this.data[this.pointer + 2] == 0x2f && this.data[this.pointer + 3] == 0x00) {
 			return true;
