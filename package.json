@@ -8,13 +8,14 @@
     "test": "mocha",
     "build": "mkdir -p module browser && babel src --out-file ./module/index.js && npm run browser && ls -l ./module/",
     "browser": "browserify -r ./module/index.js:MidiPlayer > ./browser/index.js && uglifyjs ./browser/index.js -m > ./browser/index.min.js",
-    "docs": "./node_modules/.bin/jsdoc -d ./docs src "
+    "docs": "./node_modules/.bin/jsdoc -d ./docs src -t ./node_modules/minami"
   },
   "devDependencies": {
     "babel-cli": "^6.14.0",
     "babel-preset-es2015": "^6.14.0",
     "browserify": "^14.1.0",
     "jsdoc": "^3.4.3",
+    "minami": "^1.1.1",
     "mocha": "~2.4.5",
     "uglify-js": "^2.7.3"
   },
