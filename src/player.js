@@ -75,6 +75,7 @@ class Player {
 
 	/**
 	 * Parses file for necessary information and does a dry run to calculate total length.
+	 * Populates this.events & this.totalTicks.
 	 * @return {Player}
 	 */
 	fileLoaded() {
@@ -117,7 +118,7 @@ class Player {
 		this.tracks = [];
 		this.buffer.forEach(function(byte, index) {
 			if (Utils.bytesToLetters(this.buffer.slice(index, index + 4)) == 'MTrk') {
-				var trackLength = Utils.bytesToNumber(this.buffer.slice(index + 4, index + 8));
+				let trackLength = Utils.bytesToNumber(this.buffer.slice(index + 4, index + 8));
 				this.tracks.push(new Track(this.tracks.length, this.buffer.slice(index + 8, index + 8 + trackLength)));
 			}
 		}, this);
@@ -157,6 +158,7 @@ class Player {
 	/**
 	 * The main play loop.
 	 * @param {boolean} - Indicates whether or not this is being called simply for parsing purposes.  Disregards timing if so.
+	 * @return {undefined}
 	 */
 	playLoop(dryRun) {
 		if (!this.inLoop) {
@@ -170,7 +172,7 @@ class Player {
 					this.stop();
 
 				} else {
-					var event = track.handleEvent(this.tick, dryRun);
+					let event = track.handleEvent(this.tick, dryRun);
 					if (event && !dryRun) this.emitEvent(event);
 				}
 
@@ -187,7 +189,6 @@ class Player {
 	 */
 	setStartTime(startTime) {
 		this.startTime = startTime;
-		console.log(`MidiPlayer.js: setStartTime: ` + this.startTime);
 	}
 
 	/**
@@ -195,15 +196,10 @@ class Player {
 	 * @return {Player}
 	 */
 	play() {
-		if (this.isPlaying()) {
-			console.log('Already playing...');
-			return false;
-		}
+		if (this.isPlaying()) throw 'Already playing...';
 
 		// Initialize
-		if (!this.startTime) {
-			this.startTime = (new Date()).getTime();
-		}
+		if (!this.startTime) this.startTime = (new Date()).getTime();
 
 		// Start play loop
 		//window.requestAnimationFrame(this.playLoop.bind(this));
@@ -288,7 +284,7 @@ class Player {
 	 * @return {number}
 	 */
 	getTotalTicks() {
-		return Math.max.apply(null, this.tracks.map((track) => track.delta));
+		return Math.max.apply(null, this.tracks.map(track => track.delta));
 	}
 
 	/**
@@ -314,7 +310,6 @@ class Player {
 	getSongPercentRemaining() {
 		return Math.round(this.getSongTimeRemaining() / this.getSongTime() * 100);
 	}
-
 
 	/**
 	 * Number of bytes processed in the loaded MIDI file.

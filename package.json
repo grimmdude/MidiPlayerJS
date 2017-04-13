@@ -1,7 +1,7 @@
 {
   "name": "midi-player-js",
-  "version": "1.1.0",
-  "description": "A javascript library to play MIDI files",
+  "version": "1.1.1",
+  "description": "Midi parser & player engine for browser or Node. Works well with single or multitrack MIDI files.",
   "main": "module/index.js",
   "scripts": {
     "pretest": "npm run build",
@@ -27,7 +27,7 @@
     "url": "git+https://github.com/grimmdude/MidiPlayerJS.git"
   },
   "bugs": {
-    "url": "https://github.com/grimmdude/MidiWriterJS/issues"
+    "url": "https://github.com/grimmdude/MidiPlayerJS/issues"
   },
   "keywords": [
     "midi",
