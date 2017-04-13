@@ -54,8 +54,8 @@ Soundfont.instrument(ac, 'https://raw.githubusercontent.com/gleitz/midi-js-sound
 					//document.querySelector('#track-' + event.track + ' code').innerHTML = JSON.stringify(event);
 				}
 
-				document.getElementById('tempo-display').innerHTML = this.tempo;
-				document.getElementById('file-format-display').innerHTML = this.format;
+				document.getElementById('tempo-display').innerHTML = Player.tempo;
+				document.getElementById('file-format-display').innerHTML = Player.format;
 				document.getElementById('play-bar').style.width = 100 - Player.getSongPercentRemaining() + '%';
 			});
 
@@ -76,8 +76,8 @@ Soundfont.instrument(ac, 'https://raw.githubusercontent.com/gleitz/midi-js-sound
 				//console.log(event);
 			}
 
-			document.getElementById('tempo-display').innerHTML = this.tempo;
-			document.getElementById('file-format-display').innerHTML = this.format;	
+			document.getElementById('tempo-display').innerHTML = Player.tempo;
+			document.getElementById('file-format-display').innerHTML = Player.format;	
 			document.getElementById('play-bar').style.width = 100 - Player.getSongPercentRemaining() + '%';
 		});
 
