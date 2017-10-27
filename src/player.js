@@ -242,7 +242,7 @@ class Player {
 
 	/**
 	 * Skips player pointer to specified tick.
-	 * @param {tick} - Tick to skip to.
+	 * @param {number} - Tick to skip to.
 	 * @return {Player}
 	 */
 	skipToTick(tick) {
@@ -258,7 +258,7 @@ class Player {
 
 	/**
 	 * Skips player pointer to specified percentage.
-	 * @param {percent} - Percent value in integer format.
+	 * @param {number} - Percent value in integer format.
 	 * @return {Player}
 	 */
 	skipToPercent(percent) {
@@ -269,7 +269,7 @@ class Player {
 
 	/**
 	 * Skips player pointer to specified seconds.
-	 * @param {seconds} - Seconds to skip to.
+	 * @param {number} - Seconds to skip to.
 	 * @return {Player}
 	 */
 	skipToSeconds(seconds) {
