@@ -49,7 +49,7 @@ class Track	{
 	}
 
 	/**
-	 * Sets the track pointer to the nearest event to the given tick.
+	 * Sets the track event index to the nearest event to the given tick.
 	 * @param {number} tick
 	 * @return {Track}
 	 */
