@@ -75,6 +75,7 @@ class Player {
 
 	/**
 	 * Parses file for necessary information and does a dry run to calculate total length.
+	 * Populates this.events & this.totalTicks.
 	 * @return {Player}
 	 */
 	fileLoaded() {
@@ -117,7 +118,7 @@ class Player {
 		this.tracks = [];
 		this.buffer.forEach(function(byte, index) {
 			if (Utils.bytesToLetters(this.buffer.slice(index, index + 4)) == 'MTrk') {
-				var trackLength = Utils.bytesToNumber(this.buffer.slice(index + 4, index + 8));
+				let trackLength = Utils.bytesToNumber(this.buffer.slice(index + 4, index + 8));
 				this.tracks.push(new Track(this.tracks.length, this.buffer.slice(index + 8, index + 8 + trackLength)));
 			}
 		}, this);
@@ -157,6 +158,7 @@ class Player {
 	/**
 	 * The main play loop.
 	 * @param {boolean} - Indicates whether or not this is being called simply for parsing purposes.  Disregards timing if so.
+	 * @return {undefined}
 	 */
 	playLoop(dryRun) {
 		if (!this.inLoop) {
@@ -166,11 +168,18 @@ class Player {
 			this.tracks.forEach(function(track) {
 				// Handle next event
 				if (!dryRun && this.endOfFile()) {
+					//console.log('end of file')
 					this.triggerPlayerEvent('endOfFile');
 					this.stop();
 
 				} else {
-					var event = track.handleEvent(this.tick, dryRun);
+					let event = track.handleEvent(this.tick, dryRun);
+
+					if (dryRun && event && event.hasOwnProperty('name') && event.name === 'Set Tempo') {
+						// Grab tempo if available.
+						this.tempo = event.data;
+					}
+
 					if (event && !dryRun) this.emitEvent(event);
 				}
 
@@ -187,7 +196,6 @@ class Player {
 	 */
 	setStartTime(startTime) {
 		this.startTime = startTime;
-		console.log(`MidiPlayer.js: setStartTime: ` + this.startTime);
 	}
 
 	/**
@@ -195,15 +203,10 @@ class Player {
 	 * @return {Player}
 	 */
 	play() {
-		if (this.isPlaying()) {
-			console.log('Already playing...');
-			return false;
-		}
+		if (this.isPlaying()) throw 'Already playing...';
 
 		// Initialize
-		if (!this.startTime) {
-			this.startTime = (new Date()).getTime();
-		}
+		if (!this.startTime) this.startTime = (new Date()).getTime();
 
 		// Start play loop
 		//window.requestAnimationFrame(this.playLoop.bind(this));
@@ -238,6 +241,45 @@ class Player {
 	}
 
 	/**
+	 * Skips player pointer to specified tick.
+	 * @param {tick} - Tick to skip to.
+	 * @return {Player}
+	 */
+	skipToTick(tick) {
+		this.stop();
+		this.startTick = tick;
+
+		// Need to set track event indexes to the nearest possible event to the specified tick.
+		this.tracks.forEach(function(track) {
+			track.setEventIndexByTick(tick);
+		});
+		return this;
+	}
+
+	/**
+	 * Skips player pointer to specified percentage.
+	 * @param {percent} - Percent value in integer format.
+	 * @return {Player}
+	 */
+	skipToPercent(percent) {
+		if (percent < 0 || percent > 100) throw "Percent must be number between 1 and 100.";
+		this.skipToTick(Math.round(percent / 100 * this.totalTicks));
+		return this;
+	}
+
+	/**
+	 * Skips player pointer to specified seconds.
+	 * @param {percent} - Percent value in integer format.
+	 * @return {Player}
+	 */
+	skipToSeconds(seconds) {
+		var songTime = this.getSongTime();
+		if (seconds < 0 || seconds > songTime) throw seconds + " seconds not within song time of " + songTime;
+		this.skipToPercent(seconds / songTime * 100);
+		return this;
+	}
+
+	/**
 	 * Checks if player is playing
 	 * @return {boolean}
 	 */
@@ -260,6 +302,7 @@ class Player {
 
 		// Leave tracks in pristine condish
 		this.resetTracks();
+
 		//console.log('Song time: ' + this.getSongTime() + ' seconds / ' + this.totalTicks + ' ticks.');
 
 		this.triggerPlayerEvent('fileLoaded', this);
@@ -288,7 +331,7 @@ class Player {
 	 * @return {number}
 	 */
 	getTotalTicks() {
-		return Math.max.apply(null, this.tracks.map((track) => track.delta));
+		return Math.max.apply(null, this.tracks.map(track => track.delta));
 	}
 
 	/**
@@ -314,7 +357,6 @@ class Player {
 	getSongPercentRemaining() {
 		return Math.round(this.getSongTimeRemaining() / this.getSongTime() * 100);
 	}
-
 
 	/**
 	 * Number of bytes processed in the loaded MIDI file.
@@ -347,8 +389,6 @@ class Player {
 	 * @return {Player}
 	 */
 	emitEvent(event) {
-		// Grab tempo if available.
-		if (event.hasOwnProperty('name') && event.name === 'Set Tempo') this.tempo = event.data;
 		this.triggerPlayerEvent('midiEvent', event);
 		return this;
 	}
