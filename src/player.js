@@ -269,7 +269,7 @@ class Player {
 
 	/**
 	 * Skips player pointer to specified seconds.
-	 * @param {percent} - Percent value in integer format.
+	 * @param {seconds} - Seconds to skip to.
 	 * @return {Player}
 	 */
 	skipToSeconds(seconds) {
