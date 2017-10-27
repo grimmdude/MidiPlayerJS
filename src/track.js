@@ -4,6 +4,7 @@
 class Track	{
 	constructor(index, data) {
 		this.enabled = true;
+		this.eventIndex = 0;
 		this.pointer = 0;
 		this.lastTick = 0;
 		this.lastStatus = null;
@@ -20,6 +21,7 @@ class Track	{
 	 */
 	reset() {
 		this.enabled = true;
+		this.eventIndex = 0;
 		this.pointer = 0;
 		this.lastTick = 0;
 		this.lastStatus = null;
@@ -44,6 +46,22 @@ class Track	{
 	disable() {
 		this.enabled = false;
 		return this;
+	}
+
+	/**
+	 * Sets the track pointer to the nearest event to the given tick.
+	 * @param {number} tick
+	 * @return {Track}
+	 */
+	setEventIndexByTick(tick) {
+		tick = tick || 0;
+
+		for (var i in this.events) {
+			if (this.events[i].tick >= tick) {
+				this.eventIndex = i;
+				return this;
+			}
+		}
 	}
 
 	/**
@@ -90,10 +108,24 @@ class Track	{
 	 */
 	handleEvent(currentTick, dryRun) {
 		dryRun = dryRun || false;
-		if (this.pointer < this.data.length && (dryRun || currentTick - this.lastTick >= this.getDelta())) {
-			let event = this.parseEvent();
-			if (this.enabled) return event;
-			// Recursively call this function for each event ahead that has 0 delta time?
+
+		if (dryRun) {
+			var elapsedTicks = currentTick - this.lastTick;
+			var delta = this.getDelta();
+			var eventReady = elapsedTicks >= delta;
+
+			if (this.pointer < this.data.length && (dryRun || eventReady)) {
+				let event = this.parseEvent();
+				if (this.enabled) return event;
+				// Recursively call this function for each event ahead that has 0 delta time?
+			}
+
+		} else {
+			// Let's actually play the MIDI from the generated JSON events created by the dry run.
+			if (this.events[this.eventIndex] && this.events[this.eventIndex].tick <= currentTick) {
+				this.eventIndex++;
+				if (this.enabled) return this.events[this.eventIndex - 1];
+			}
 		}
 
 		return null;
@@ -126,6 +158,7 @@ class Track	{
 		this.lastTick = this.lastTick + eventJson.delta;
 		this.runningDelta += eventJson.delta;
 		eventJson.tick = this.runningDelta;
+		eventJson.byteIndex = this.pointer;
 
 		//eventJson.raw = event;
 		if (this.data[eventStartIndex] == 0xff) {

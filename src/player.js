@@ -168,11 +168,18 @@ class Player {
 			this.tracks.forEach(function(track) {
 				// Handle next event
 				if (!dryRun && this.endOfFile()) {
+					//console.log('end of file')
 					this.triggerPlayerEvent('endOfFile');
 					this.stop();
 
 				} else {
 					let event = track.handleEvent(this.tick, dryRun);
+
+					if (dryRun && event && event.hasOwnProperty('name') && event.name === 'Set Tempo') {
+						// Grab tempo if available.
+						this.tempo = event.data;
+					}
+
 					if (event && !dryRun) this.emitEvent(event);
 				}
 
@@ -234,6 +241,45 @@ class Player {
 	}
 
 	/**
+	 * Skips player pointer to specified tick.
+	 * @param {tick} - Tick to skip to.
+	 * @return {Player}
+	 */
+	skipToTick(tick) {
+		this.stop();
+		this.startTick = tick;
+
+		// Need to set track event indexes to the nearest possible event to the specified tick.
+		this.tracks.forEach(function(track) {
+			track.setEventIndexByTick(tick);
+		});
+		return this;
+	}
+
+	/**
+	 * Skips player pointer to specified percentage.
+	 * @param {percent} - Percent value in integer format.
+	 * @return {Player}
+	 */
+	skipToPercent(percent) {
+		if (percent < 0 || percent > 100) throw "Percent must be number between 1 and 100.";
+		this.skipToTick(Math.round(percent / 100 * this.totalTicks));
+		return this;
+	}
+
+	/**
+	 * Skips player pointer to specified seconds.
+	 * @param {percent} - Percent value in integer format.
+	 * @return {Player}
+	 */
+	skipToSeconds(seconds) {
+		var songTime = this.getSongTime();
+		if (seconds < 0 || seconds > songTime) throw seconds + " seconds not within song time of " + songTime;
+		this.skipToPercent(seconds / songTime * 100);
+		return this;
+	}
+
+	/**
 	 * Checks if player is playing
 	 * @return {boolean}
 	 */
@@ -256,6 +302,7 @@ class Player {
 
 		// Leave tracks in pristine condish
 		this.resetTracks();
+
 		//console.log('Song time: ' + this.getSongTime() + ' seconds / ' + this.totalTicks + ' ticks.');
 
 		this.triggerPlayerEvent('fileLoaded', this);
@@ -342,8 +389,6 @@ class Player {
 	 * @return {Player}
 	 */
 	emitEvent(event) {
-		// Grab tempo if available.
-		if (event.hasOwnProperty('name') && event.name === 'Set Tempo') this.tempo = event.data;
 		this.triggerPlayerEvent('midiEvent', event);
 		return this;
 	}
