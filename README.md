@@ -21,4 +21,4 @@ Player.loadFile('./test.mid');
 Player.play();
 ```
 ## API Documentation
-http://grimmdude.com/MidiPlayerJS/docs/
+[Source Documentation](http://grimmdude.com/MidiPlayerJS/docs/)

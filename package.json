@@ -9,7 +9,7 @@
     "build": "mkdir -p module browser && cat src/*.js > module/index.js && babel module/index.js -o ./module/index.js --no-comments && npm run browser && ls -l ./module/",
     "browser": "browserify -r ./module/index.js:MidiPlayer > ./browser/index.js && uglifyjs ./browser/index.js -m > ./browser/index.min.js",
     "watch": "watch 'npm run build' src",
-    "docs": "./node_modules/.bin/jsdoc -d ./docs src -t ./node_modules/minami"
+    "docs": "./node_modules/.bin/jsdoc src README.md -d ./docs -t ./node_modules/minami"
   },
   "devDependencies": {
     "babel-cli": "^6.14.0",
