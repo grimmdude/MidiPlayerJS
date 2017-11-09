@@ -169,7 +169,7 @@ class Player {
 			this.tracks.forEach(function(track) {
 				// Handle next event
 				if (!dryRun && this.endOfFile()) {
-					console.log('end of file')
+					//console.log('end of file')
 					this.triggerPlayerEvent('endOfFile');
 					this.stop();
 
