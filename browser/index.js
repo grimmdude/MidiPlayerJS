@@ -1927,7 +1927,7 @@ var _createClass = function () { function defineProperties(target, props) { for 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var Constants = {
-	VERSION: '1.1.2',
+	VERSION: '1.1.3',
 	NOTES: []
 };
 
@@ -1968,6 +1968,7 @@ var Player = function () {
 		this.inLoop = false;
 		this.totalTicks = 0;
 		this.events = [];
+		this.totalEvents = 0;
 		this.eventListeners = {};
 
 		if (typeof eventHandler === 'function') this.on('midiEvent', eventHandler);
@@ -2152,6 +2153,7 @@ var Player = function () {
 			while (!this.endOfFile()) {
 				this.playLoop(true);
 			}this.events = this.getEvents();
+			this.totalEvents = this.getTotalEvents();
 			this.totalTicks = this.getTotalTicks();
 			this.startTick = 0;
 			this.startTime = 0;
@@ -2184,6 +2186,13 @@ var Player = function () {
 			}));
 		}
 	}, {
+		key: 'getTotalEvents',
+		value: function getTotalEvents() {
+			return this.tracks.reduce(function (a, b) {
+				return { events: { length: a.events.length + b.events.length } };
+			}, { events: { length: 0 } }).events.length;
+		}
+	}, {
 		key: 'getSongTime',
 		value: function getSongTime() {
 			return this.totalTicks / this.division / this.tempo * 60;
@@ -2206,8 +2215,19 @@ var Player = function () {
 			}, { pointer: 0 }).pointer;
 		}
 	}, {
+		key: 'eventsPlayed',
+		value: function eventsPlayed() {
+			return this.tracks.reduce(function (a, b) {
+				return { eventIndex: a.eventIndex + b.eventIndex };
+			}, { eventIndex: 0 }).eventIndex;
+		}
+	}, {
 		key: 'endOfFile',
 		value: function endOfFile() {
+			if (this.isPlaying()) {
+				return this.eventsPlayed() == this.totalEvents;
+			}
+
 			return this.bytesProcessed() == this.buffer.length;
 		}
 	}, {
