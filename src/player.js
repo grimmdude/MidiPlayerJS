@@ -10,7 +10,7 @@ class Player {
 		this.buffer = buffer || null;
 		this.division;
 		this.format;
-		this.setIntervalId = null;
+		this.setIntervalId = false;
 		this.tracks = [];
 		this.tempo = 120;
 		this.startTick = 0;
@@ -285,7 +285,7 @@ class Player {
 	 * @return {boolean}
 	 */
 	isPlaying() {
-		return this.setIntervalId > 0;
+		return this.setIntervalId > 0 || typeof this.setIntervalId === 'object';
 	}
 
 	/**
