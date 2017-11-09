@@ -19,6 +19,7 @@ class Player {
 		this.inLoop = false;
 		this.totalTicks = 0;
 		this.events = [];
+		this.totalEvents = 0;
 		this.eventListeners = {};
 
 		if (typeof(eventHandler) === 'function') this.on('midiEvent', eventHandler);
@@ -168,7 +169,7 @@ class Player {
 			this.tracks.forEach(function(track) {
 				// Handle next event
 				if (!dryRun && this.endOfFile()) {
-					//console.log('end of file')
+					console.log('end of file')
 					this.triggerPlayerEvent('endOfFile');
 					this.stop();
 
@@ -296,6 +297,7 @@ class Player {
 		this.resetTracks();
 		while (!this.endOfFile()) this.playLoop(true);
 		this.events = this.getEvents();
+		this.totalEvents = this.getTotalEvents();
 		this.totalTicks = this.getTotalTicks();
 		this.startTick = 0;
 		this.startTime = 0;
@@ -335,6 +337,14 @@ class Player {
 	}
 
 	/**
+	 * Gets total number of events in the loaded MIDI file.
+	 * @return {number}
+	 */
+	getTotalEvents() {
+		return this.tracks.reduce((a, b) => {return {events: {length: a.events.length + b.events.length}}}, {events: {length: 0}}).events.length;
+	}
+
+	/**
 	 * Gets song duration in seconds.
 	 * @return {number}
 	 */
@@ -368,10 +378,25 @@ class Player {
 	}
 
 	/**
+	 * Number of events played up to this point.
+	 * @return {number}
+	 */
+	eventsPlayed() {
+		return this.tracks.reduce((a, b) => {return {eventIndex: a.eventIndex + b.eventIndex}}, {eventIndex: 0}).eventIndex;
+	}
+
+	/**
 	 * Determines if the player pointer has reached the end of the loaded MIDI file.
+	 * Used in two ways:
+	 * 1. If playing result is based on loaded JSON events.
+	 * 2. If parsing (dryRun) it's based on the actual buffer length vs bytes processed.
 	 * @return {boolean}
 	 */
 	endOfFile() {
+		if (this.isPlaying()) {
+			return this.eventsPlayed() == this.totalEvents;
+		}
+
 		return this.bytesProcessed() == this.buffer.length;
 	}
 
