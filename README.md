@@ -35,7 +35,7 @@ Player.on('midiEvent', function(event) {
     // (this is the same as passing a function to MidiPlayer.Player() when instantiating.
 });
 Player.on('endOfFile', function() {
-    // Do something when end of the file has been reach.
+    // Do something when end of the file has been reached.
 });
 ```
 ## Full API Documentation
