@@ -3,6 +3,7 @@
   "version": "1.1.4",
   "description": "Midi parser & player engine for browser or Node. Works well with single or multitrack MIDI files.",
   "main": "module/index.js",
+  "browser": "browser/index.js",
   "scripts": {
     "pretest": "npm run build",
     "test": "mocha",
