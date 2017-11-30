@@ -1,3 +1,6 @@
+const Utils = require("./utils").Utils;
+const Track = require("./track").Track;
+
 /**
  * Main player class.  Contains methods to load files, start, stop.
  * @param {function} - Callback to fire for each MIDI event.  Can also be added with on('midiEvent', fn)
@@ -117,13 +120,15 @@ class Player {
 	 */
 	getTracks() {
 		this.tracks = [];
-		this.buffer.forEach(function(byte, index) {
-			if (Utils.bytesToLetters(this.buffer.slice(index, index + 4)) == 'MTrk') {
-				let trackLength = Utils.bytesToNumber(this.buffer.slice(index + 4, index + 8));
-				this.tracks.push(new Track(this.tracks.length, this.buffer.slice(index + 8, index + 8 + trackLength)));
+		let trackOffset = 0;
+		while (trackOffset < this.buffer.length) {
+			if (Utils.bytesToLetters(this.buffer.slice(trackOffset, trackOffset + 4)) == 'MTrk') {
+				let trackLength = Utils.bytesToNumber(this.buffer.slice(trackOffset + 4, trackOffset + 8));
+				this.tracks.push(new Track(this.tracks.length, this.buffer.slice(trackOffset + 8, trackOffset + 8 + trackLength)));
 			}
-		}, this);
 
+			trackOffset += Utils.bytesToNumber(this.buffer.slice(trackOffset + 4, trackOffset + 8)) + 8;
+		}
 		return this;
 	}
 
@@ -419,7 +424,7 @@ class Player {
 	}
 
 	/**
-	 * Subscribes events to listeners 
+	 * Subscribes events to listeners
 	 * @param {string} - Name of event to subscribe to.
 	 * @param {function} - Callback to fire when event is broadcast.
 	 * @return {Player}

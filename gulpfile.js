@@ -11,17 +11,34 @@ const babel = require("gulp-babel");
 const sourcemaps = require("gulp-sourcemaps");
 const gutil = require("gulp-util");
 
-gulp.task("babel", function() {
-    gulp
-        .src("src/*.js")
-        .pipe(sourcemaps.init())
-        .pipe(concat("midiplayer.js"))
-        .pipe(babel())
-        .pipe(sourcemaps.write("."))
-        .pipe(gulp.dest("module"));
+gulp.task("module", function() {
+    // set up the browserify instance on a task basis
+    const b = browserify({
+        debug: true,
+        node: true,
+        standalone: "MidiPlayer",
+        builtins: [],
+        bundleExternal: false,
+        ignoreMissing: false,
+        browserField: false,
+    });
+
+    b.add("./src/index.js");
+    b.exclude("fs");
+    b.exclude("bundle");
+
+    return (b
+            .transform("babelify", { presets: ["env"] })
+            .bundle()
+            .pipe(source("midiplayer.js"))
+            .pipe(buffer())
+            // .pipe(sourcemaps.init({ loadMaps: true }))
+            .on("error", gutil.log)
+            // .pipe(sourcemaps.write("."))
+            .pipe(gulp.dest("module")) );
 });
 
-gulp.task("browserify", ["babel"], function() {
+gulp.task("browserify", function() {
     // set up the browserify instance on a task basis
     const b = browserify({
         debug: true,
@@ -29,24 +46,24 @@ gulp.task("browserify", ["babel"], function() {
         browserField: false,
     });
 
-    b.add("./module/midiplayer.js");
+    b.add("./src/index.js");
     b.external("fs");
 
     return (b
+            .transform("babelify", { presets: ["env"] })
             .bundle()
             .pipe(source("midiplayer.js"))
             .pipe(buffer())
-            .pipe(sourcemaps.init({ loadMaps: true }))
+            // .pipe(sourcemaps.init({ loadMaps: true }))
             .on("error", gutil.log)
-            .pipe(sourcemaps.write("."))
+            // .pipe(sourcemaps.write("."))
             .pipe(gulp.dest("browser")) );
 });
 
-gulp.task("default", ["browserify"], function() {
+gulp.task("default", ["browserify", "module"], function() {
     gulp
         .src("./browser/midiplayer.js")
         .pipe(uglify())
         .pipe(rename("midiplayer.min.js"))
         .pipe(gulp.dest("browser"));
 });
-

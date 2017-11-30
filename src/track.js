@@ -1,3 +1,6 @@
+const Constants = require("./constants").Constants;
+const Utils = require("./utils").Utils;
+
 /**
  * Class representing a track.  Contains methods for parsing events and keeping track of pointer.
  */
@@ -344,3 +347,5 @@ class Track	{
 		return false;
 	}
 }
+
+module.exports.Track = Track;
