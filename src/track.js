@@ -101,7 +101,7 @@ class Track	{
 	 * @return {number}
 	 */
 	getDelta() {
-		return Utils.readVarInt(this.data.slice(this.pointer, this.pointer + this.getDeltaByteCount()));
+		return Utils.readVarInt(this.data.subarray(this.pointer, this.pointer + this.getDeltaByteCount()));
 	}
 
 	/**
@@ -142,10 +142,10 @@ class Track	{
 	getStringData(eventStartIndex) {
 		var currentByte = this.pointer;
 		var byteCount = 1;
-		var length = Utils.readVarInt(this.data.slice(eventStartIndex + 2, eventStartIndex + 2 + byteCount));
+		var length = Utils.readVarInt(this.data.subarray(eventStartIndex + 2, eventStartIndex + 2 + byteCount));
 		var stringLength = length;
 
-		return Utils.bytesToLetters(this.data.slice(eventStartIndex + byteCount + 2, eventStartIndex + byteCount + length + 2));
+		return Utils.bytesToLetters(this.data.subarray(eventStartIndex + byteCount + 2, eventStartIndex + byteCount + length + 2));
 	}
 
 	/**
@@ -217,7 +217,7 @@ class Track	{
 					break;
 				case 0x51: // Set Tempo
 					eventJson.name = 'Set Tempo';
-					eventJson.data = Math.round(60000000 / Utils.bytesToNumber(this.data.slice(eventStartIndex + 3, eventStartIndex + 6)));
+					eventJson.data = Math.round(60000000 / Utils.bytesToNumber(this.data.subarray(eventStartIndex + 3, eventStartIndex + 6)));
 					this.tempo = eventJson.data;
 					break;
 				case 0x54: // SMTPE Offset
@@ -309,6 +309,7 @@ class Track	{
 					// Program Change
 					eventJson.name = 'Program Change';
 					eventJson.channel = this.lastStatus - 0xc0 + 1;
+					eventJson.value = this.data[eventStartIndex + 1];
 					this.pointer += deltaByteCount + 2;
 
 				} else if (this.data[eventStartIndex] <= 0xdf) {

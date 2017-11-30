@@ -84,7 +84,7 @@ class Utils {
 	}
 
 	/**
-	 * Decodes base-64 encoded string 
+	 * Decodes base-64 encoded string
 	 * @param {string} string
 	 * @return {string}
 	 */

@@ -1,6 +1,13 @@
 const Utils = require("./utils").Utils;
 const Track = require("./track").Track;
 
+// Polyfill Uint8Array.forEach: Doesn't exist on Safari <10
+if (!Uint8Array.prototype.forEach) {
+	Object.defineProperty(Uint8Array.prototype, 'forEach', {
+		value: Array.prototype.forEach
+	});
+}
+
 /**
  * Main player class.  Contains methods to load files, start, stop.
  * @param {function} - Callback to fire for each MIDI event.  Can also be added with on('midiEvent', fn)
@@ -92,7 +99,7 @@ class Player {
 	 * @return {boolean}
 	 */
 	validate() {
-		return Utils.bytesToLetters(this.buffer.slice(0, 4)) === 'MThd';
+		return Utils.bytesToLetters(this.buffer.subarray(0, 4)) === 'MThd';
 	}
 
 	/**
@@ -107,10 +114,10 @@ class Player {
 		(ie all tracks are to be played simultaneously).
 		Format 2 which contain one or more independant tracks
 		(ie each track is to be played independantly of the others).
-		return Utils.bytesToNumber(this.buffer.slice(8, 10));
+		return Utils.bytesToNumber(this.buffer.subarray(8, 10));
 		*/
 
-		this.format = Utils.bytesToNumber(this.buffer.slice(8, 10));
+		this.format = Utils.bytesToNumber(this.buffer.subarray(8, 10));
 		return this;
 	}
 
@@ -122,12 +129,12 @@ class Player {
 		this.tracks = [];
 		let trackOffset = 0;
 		while (trackOffset < this.buffer.length) {
-			if (Utils.bytesToLetters(this.buffer.slice(trackOffset, trackOffset + 4)) == 'MTrk') {
-				let trackLength = Utils.bytesToNumber(this.buffer.slice(trackOffset + 4, trackOffset + 8));
-				this.tracks.push(new Track(this.tracks.length, this.buffer.slice(trackOffset + 8, trackOffset + 8 + trackLength)));
+			if (Utils.bytesToLetters(this.buffer.subarray(trackOffset, trackOffset + 4)) == 'MTrk') {
+				let trackLength = Utils.bytesToNumber(this.buffer.subarray(trackOffset + 4, trackOffset + 8));
+				this.tracks.push(new Track(this.tracks.length, this.buffer.subarray(trackOffset + 8, trackOffset + 8 + trackLength)));
 			}
 
-			trackOffset += Utils.bytesToNumber(this.buffer.slice(trackOffset + 4, trackOffset + 8)) + 8;
+			trackOffset += Utils.bytesToNumber(this.buffer.subarray(trackOffset + 4, trackOffset + 8)) + 8;
 		}
 		return this;
 	}
@@ -157,7 +164,7 @@ class Player {
 	 * @return {Player}
 	 */
 	getDivision() {
-		this.division = Utils.bytesToNumber(this.buffer.slice(12, 14));
+		this.division = Utils.bytesToNumber(this.buffer.subarray(12, 14));
 		return this;
 	}
 
