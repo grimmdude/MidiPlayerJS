@@ -63,6 +63,14 @@ declare module "midi-player-js" {
 
         class Track {
             /**
+             * The events parsed out of a track
+             *
+             * @type {Event[]}
+             * @memberof Track
+             */
+            events: Event[];
+
+            /**
              * Resets all stateful track information used during playback.
              *
              * @returns {this}
