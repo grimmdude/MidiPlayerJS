@@ -190,7 +190,7 @@ class Player {
 
 					if (dryRun && event && event.hasOwnProperty('name') && event.name === 'Set Tempo') {
 						// Grab tempo if available.
-						this.tempo = event.data;
+						this.setTempo(event.data);
 					}
 
 					if (event && !dryRun) this.emitEvent(event);
@@ -201,6 +201,14 @@ class Player {
 			if (!dryRun) this.triggerPlayerEvent('playing', {tick: this.tick});
 			this.inLoop = false;
 		}
+	}
+
+	/**
+	 * Setter for tempo.
+	 * @param {number} - Tempo in bpm
+	 */
+	setTempo(tempo) {
+		this.tempo = tempo;
 	}
 
 	/**
