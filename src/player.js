@@ -205,7 +205,7 @@ class Player {
 
 	/**
 	 * Setter for tempo.
-	 * @param {number} - Tempo in bpm
+	 * @param {number} - Tempo in bpm (defaults to 120)
 	 */
 	setTempo(tempo) {
 		this.tempo = tempo;
