@@ -188,15 +188,15 @@ declare module "midi-player-js" {
             /**
              * Loads quarter note division of loaded MIDI file.
              */
-            getDivision(): this;
+            private getDivision(): this;
             /**
              * Loads MIDI file format for loaded file.
              */
-            getFormat(): this;
+            private getFormat(): this;
             /**
              * Parses out tracks, places them in this.tracks and initializes this.pointers.
              */
-            getTracks(): this;
+            private getTracks(): this;
 
             getCurrentTick(): number;
             /**
@@ -335,7 +335,39 @@ declare module "midi-player-js" {
              */
             triggerPlayerEvent(playerEvent: string, data: any): this;
 
+            /**
+             * The tracks of the file.
+             */
             tracks: Track[] | undefined;
+
+            /**
+             * Song tempo
+             *
+             * @type {number}
+             */
+            tempo: number;
+
+            /**
+             * Ticks per quarter note.
+             * @type {number}
+             */
+            division: number;
+
+            /**
+             * Current tick
+             */
+            tick: number;
+
+            /**
+             * MIDI File format.
+             *
+             * MIDI files come in 3 variations:
+             * - Format 0 which contains a single track.
+             * - Format 1 which contains one or more simultaneous tracks
+             *   (i.e. all tracks are to be played simultaneously).
+             * - Format 2 which contains one or more independent tracks.
+             */
+            format: number;
         }
     }
 
