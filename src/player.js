@@ -22,6 +22,7 @@ class Player {
 		this.format;
 		this.setIntervalId = false;
 		this.tracks = [];
+		this.instruments = [];
 		this.defaultTempo = 120;
 		this.tempo = null;
 		this.startTick = 0;
@@ -185,16 +186,20 @@ class Player {
 					//console.log('end of file')
 					this.triggerPlayerEvent('endOfFile');
 					this.stop();
-
 				} else {
 					let event = track.handleEvent(this.tick, dryRun);
 
-					if (dryRun && event && event.hasOwnProperty('name') && event.name === 'Set Tempo') {
-						// Grab tempo if available.
-						this.setTempo(event.data);
-					}
-
-					if (event && !dryRun) this.emitEvent(event);
+					if (dryRun && event) {
+						if (event.hasOwnProperty('name') && event.name === 'Set Tempo') {
+							// Grab tempo if available.
+							this.setTempo(event.data);
+						}
+						if (event.hasOwnProperty('name') && event.name === 'Program Change') {
+							if (!this.instruments.includes(event.value)) {
+								this.instruments.push(event.value);
+							}
+						}
+					} else if (event) this.emitEvent(event);
 				}
 
 			}, this);
