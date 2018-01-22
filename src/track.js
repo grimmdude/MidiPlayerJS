@@ -224,10 +224,30 @@ class Track	{
 					eventJson.name = 'SMTPE Offset';
 					break;
 				case 0x58: // Time Signature
+					// FF 58 04 nn dd cc bb
 					eventJson.name = 'Time Signature';
+					eventJson.data = this.data.subarray(eventStartIndex + 3, eventStartIndex + 7);
+					eventJson.timeSignature = "" + eventJson.data[0] + "/" + Math.pow(eventJson.data[1], 2);
 					break;
 				case 0x59: // Key Signature
+					// FF 59 02 sf mi
 					eventJson.name = 'Key Signature';
+					eventJson.data = this.data.subarray(eventStartIndex + 3, eventStartIndex + 5);
+
+					if (eventJson.data[0] >= 0) {
+						eventJson.keySignature = Constants.CIRCLE_OF_FIFTHS[eventJson.data[0]];
+
+					} else if (eventJson.data[0] < 0) {
+						eventJson.keySignature = Constants.CIRCLE_OF_FOURTHS[Math.abs(eventJson.data[0])];
+					}
+
+					if (eventJson.data[1] == 0) {
+						eventJson.keySignature += " Major";
+
+					} else if (eventJson.data[1] == 1) {
+						eventJson.keySignature += " Minor";
+					}
+
 					break;
 				case 0x7F: // Sequencer-Specific Meta-event
 					eventJson.name = 'Sequencer-Specific Meta-event';
