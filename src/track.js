@@ -227,7 +227,7 @@ class Track	{
 					// FF 58 04 nn dd cc bb
 					eventJson.name = 'Time Signature';
 					eventJson.data = this.data.subarray(eventStartIndex + 3, eventStartIndex + 7);
-					eventJson.timeSignature = "" + eventJson.data[0] + "/" + Math.pow(eventJson.data[1], 2);
+					eventJson.timeSignature = "" + eventJson.data[0] + "/" + Math.pow(2, eventJson.data[1]);
 					break;
 				case 0x59: // Key Signature
 					// FF 59 02 sf mi
