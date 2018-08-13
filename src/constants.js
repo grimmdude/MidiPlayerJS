@@ -2,7 +2,7 @@
  * Constants used in player.
  */
 var Constants = {
-	VERSION: '2.0.2',
+	VERSION: '2.0.4',
 	NOTES: [],
 	CIRCLE_OF_FOURTHS: ['C', 'F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb', 'Cb', 'Fb', 'Bbb', 'Ebb', 'Abb'],
 	CIRCLE_OF_FIFTHS: ['C', 'G', 'D', 'A', 'E', 'B', 'F#', 'C#', 'G#', 'D#', 'A#', 'E#']
