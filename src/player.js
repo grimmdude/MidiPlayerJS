@@ -421,7 +421,7 @@ class Player {
 	 */
 	endOfFile() {
 		if (this.isPlaying()) {
-			return this.eventsPlayed() == this.totalEvents;
+			return this.totalTicks - this.tick <= 0;
 		}
 
 		return this.bytesProcessed() == this.buffer.length;
