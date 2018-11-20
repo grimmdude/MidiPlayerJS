@@ -384,7 +384,7 @@ class Player {
 	 * @return {number}
 	 */
 	getSongTimeRemaining() {
-		return Math.round((this.totalTicks - this.tick) / this.division / this.tempo * 60);
+		return Math.round((this.totalTicks - this.getCurrentTick()) / this.division / this.tempo * 60);
 	}
 
 	/**
@@ -432,7 +432,7 @@ class Player {
 	 * @return {number}
 	 */
 	getCurrentTick() {
-		if(!this.startTime && this.tick) return this.tick;
+		if(!this.startTime && this.tick) return this.startTick;
 		else if(!this.startTime) return 0;
 		return Math.round(((new Date()).getTime() - this.startTime) / 1000 * (this.division * (this.tempo / 60))) + this.startTick;
 	}

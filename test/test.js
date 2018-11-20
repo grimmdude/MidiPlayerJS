@@ -70,27 +70,55 @@ describe('MidiPlayerJS', function() {
 		});
 
 		describe('#getCurrentTime', function () {
+			let Player;
 			beforeEach(function() {
 				this.clock = sinon.useFakeTimers();
 				this.clock.tick(5000); //set start time
+				Player = new MidiPlayer.Player();
+				Player.loadDataUri(zelda);
 			});
 			afterEach(function() {
 				this.clock = sinon.restore();
 			});
 			it('should return 0 after init', function () {
-				var Player = new MidiPlayer.Player();
-				Player.loadDataUri(zelda);
 				assert.equal(Player.getCurrentTick(), 0);
 			});
 			it('should return last known tick after pause', function () {
-				var Player = new MidiPlayer.Player();
-				Player.loadDataUri(zelda);
 				const skipTicks = 123456;
 				Player.skipToTick(skipTicks);
 				Player.play();
 				this.clock.tick(6); //run 1 tick
 				Player.pause();
 				assert.equal(Player.getCurrentTick(), skipTicks + 1);
+			});
+			it('should return 0 after stop', function () {
+				const skipTicks = 123456;
+				Player.skipToTick(skipTicks);
+				Player.play();
+				this.clock.tick(6); //run 1 tick
+				Player.stop();
+				assert.equal(Player.getCurrentTick(), 0);
+			})
+		});
+
+		describe('#getSongTimeRemaining', function () {
+			let Player;
+			beforeEach(function () {
+				this.clock = sinon.useFakeTimers();
+				this.clock.tick(5000); //set start time
+				Player = new MidiPlayer.Player();
+				Player.loadDataUri(zelda);
+			});
+			afterEach(function () {
+				this.clock = sinon.restore();
+			});
+			it('should return totalTime after stop', function () {
+				const skipTicks = 123456;
+				Player.skipToTick(skipTicks);
+				Player.play();
+				this.clock.tick(6); //run 1 tick
+				Player.stop();
+				assert.equal(Player.getSongTimeRemaining(), Player.getSongTime());
 			})
 		});
 	});
