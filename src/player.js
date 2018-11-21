@@ -192,6 +192,7 @@ class Player {
 					if (dryRun && event) {
 						if (event.hasOwnProperty('name') && event.name === 'Set Tempo') {
 							// Grab tempo if available.
+							this.defaultTempo = event.data;
 							this.setTempo(event.data);
 						}
 						if (event.hasOwnProperty('name') && event.name === 'Program Change') {
@@ -384,7 +385,7 @@ class Player {
 	 * @return {number}
 	 */
 	getSongTimeRemaining() {
-		return Math.round((this.totalTicks - this.tick) / this.division / this.tempo * 60);
+		return Math.round((this.totalTicks - this.getCurrentTick()) / this.division / this.tempo * 60);
 	}
 
 	/**
@@ -421,7 +422,7 @@ class Player {
 	 */
 	endOfFile() {
 		if (this.isPlaying()) {
-			return this.eventsPlayed() == this.totalEvents;
+			return this.totalTicks - this.tick <= 0;
 		}
 
 		return this.bytesProcessed() == this.buffer.length;
@@ -432,6 +433,8 @@ class Player {
 	 * @return {number}
 	 */
 	getCurrentTick() {
+		if(!this.startTime && this.tick) return this.startTick;
+		else if(!this.startTime) return 0;
 		return Math.round(((new Date()).getTime() - this.startTime) / 1000 * (this.division * (this.tempo / 60))) + this.startTick;
 	}
 

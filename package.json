@@ -1,6 +1,6 @@
 {
   "name": "midi-player-js",
-  "version": "2.0.4",
+  "version": "2.0.5",
   "description": "Midi parser & player engine for browser or Node. Works well with single or multitrack MIDI files.",
   "main": "module/midiplayer.js",
   "browser": "browser/midiplayer.js",
@@ -27,6 +27,7 @@
     "jsdoc": "^3.4.3",
     "minami": "^1.1.1",
     "mocha": "~2.4.5",
+    "sinon": "^7.1.1",
     "uglify-js": "^2.7.3",
     "vinyl-buffer": "^1.0.1",
     "vinyl-source-stream": "^1.1.2",

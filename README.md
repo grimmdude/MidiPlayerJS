@@ -43,6 +43,9 @@ Player.on('endOfFile', function() {
     // Do something when end of the file has been reached.
 });
 ```
+
+Note that because of a common practice called "running status" many MIDI files may use `Note on` events with `0` velocity in place of `Note off` events.
+
 ## Full API Documentation
 [http://grimmdude.com/MidiPlayerJS/docs/](http://grimmdude.com/MidiPlayerJS/docs/)
 
