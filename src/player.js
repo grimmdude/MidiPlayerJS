@@ -192,6 +192,7 @@ class Player {
 					if (dryRun && event) {
 						if (event.hasOwnProperty('name') && event.name === 'Set Tempo') {
 							// Grab tempo if available.
+							this.defaultTempo = event.data;
 							this.setTempo(event.data);
 						}
 						if (event.hasOwnProperty('name') && event.name === 'Program Change') {
