@@ -1,7 +1,7 @@
 /**
  * Constants used in player.
  */
-var Constants = {
+const Constants = {
 	VERSION: '2.0.5',
 	NOTES: [],
 	CIRCLE_OF_FOURTHS: ['C', 'F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb', 'Cb', 'Fb', 'Bbb', 'Ebb', 'Abb'],
@@ -9,7 +9,7 @@ var Constants = {
 };
 
 // Builds notes object for reference against binary values.
-var allNotes = [['C'], ['C#','Db'], ['D'], ['D#','Eb'], ['E'],['F'], ['F#','Gb'], ['G'], ['G#','Ab'], ['A'], ['A#','Bb'], ['B']];
+const allNotes = [['C'], ['C#','Db'], ['D'], ['D#','Eb'], ['E'],['F'], ['F#','Gb'], ['G'], ['G#','Ab'], ['A'], ['A#','Bb'], ['B']];
 var counter = 0;
 
 // All available octaves.
@@ -20,4 +20,4 @@ for (let i = -1; i <= 9; i++) {
 	});
 }
 
-exports.Constants = Constants;
+export {Constants};
