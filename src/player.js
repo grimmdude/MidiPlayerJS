@@ -425,7 +425,7 @@ class Player {
 			return this.totalTicks - this.tick <= 0;
 		}
 
-		return this.bytesProcessed() == this.buffer.length;
+		return this.bytesProcessed() >= this.buffer.length;
 	}
 
 	/**
