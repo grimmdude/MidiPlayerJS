@@ -94,4 +94,4 @@ class Utils {
 	}
 }
 
-exports.Utils = Utils;
+export {Utils};

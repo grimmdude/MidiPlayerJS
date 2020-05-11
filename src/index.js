@@ -1,9 +1,9 @@
-const Player = require("./player");
-const Utils = require("./utils");
-const Constants = require("./constants");
+import {Player} from './player';
+import {Utils} from './utils';
+import {Constants} from './constants';
 
-module.exports = {
-    Player:Player.Player,
-    Utils:Utils.Utils,
-    Constants:Constants.Constants
+export default {
+	Player,
+	Utils,
+	Constants,
 }

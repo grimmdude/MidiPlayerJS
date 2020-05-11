@@ -1,5 +1,5 @@
-const Utils = require("./utils").Utils;
-const Track = require("./track").Track;
+import {Track} from './track';
+import {Utils} from './utils';
 
 // Polyfill Uint8Array.forEach: Doesn't exist on Safari <10
 if (!Uint8Array.prototype.forEach) {
@@ -425,7 +425,7 @@ class Player {
 			return this.totalTicks - this.tick <= 0;
 		}
 
-		return this.bytesProcessed() == this.buffer.length;
+		return this.bytesProcessed() >= this.buffer.length;
 	}
 
 	/**
@@ -473,4 +473,4 @@ class Player {
 
 }
 
-exports.Player = Player;
+export {Player};

@@ -1,39 +1,30 @@
 {
   "name": "midi-player-js",
-  "version": "2.0.5",
+  "version": "2.0.6",
   "description": "Midi parser & player engine for browser or Node. Works well with single or multitrack MIDI files.",
-  "main": "module/midiplayer.js",
+  "main": "build/index.js",
   "browser": "browser/midiplayer.js",
   "scripts": {
     "pretest": "npm run build",
     "test": "mocha",
-    "build": "gulp",
-    "watch": "watch 'gulp' src",
+    "build": "mkdir -p build && rollup -c && npm run docs",
+    "watch": "watch 'npm run build' src",
     "docs": "jsdoc src README.md -d ./docs -t ./node_modules/minami"
   },
   "devDependencies": {
-    "babel-cli": "^6.14.0",
-    "babel-preset-env": "^1.6.1",
-    "babel-preset-es2015": "^6.14.0",
-    "babelify": "^8.0.0",
-    "browserify": "^14.5.0",
-    "gulp": "^3.9.1",
-    "gulp-babel": "^7.0.0",
-    "gulp-concat": "^2.6.1",
-    "gulp-rename": "^1.2.2",
-    "gulp-sourcemaps": "^2.6.3",
-    "gulp-uglify": "^3.0.0",
-    "gulp-util": "^3.0.8",
-    "jsdoc": "^3.4.3",
+    "@babel/core": "^7.2.2",
+    "@babel/plugin-transform-destructuring": "^7.2.0",
+    "@babel/preset-env": "^7.2.3",
+    "@rollup/plugin-babel": "^5.0.0",
+    "jsdoc": "^3.5.5",
     "minami": "^1.1.1",
-    "mocha": "~2.4.5",
+    "mocha": "^5.2.0",
+    "rollup": "^2.9.0",
     "sinon": "^7.1.1",
-    "uglify-js": "^2.7.3",
-    "vinyl-buffer": "^1.0.1",
-    "vinyl-source-stream": "^1.1.2",
     "watch": "^1.0.2"
   },
   "directories": {
+    "lib": "src",
     "test": "test"
   },
   "repository": {
@@ -50,10 +41,5 @@
   ],
   "author": "Garrett Grimm",
   "license": "MIT",
-  "babel": {
-    "presets": [
-      "es2015"
-    ],
-    "sourceMaps": "inline"
-  }
+  "dependencies": {}
 }
