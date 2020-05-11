@@ -2,6 +2,8 @@ var MidiPlayer = (function () {
   'use strict';
 
   function _typeof(obj) {
+    "@babel/helpers - typeof";
+
     if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
       _typeof = function (obj) {
         return typeof obj;
@@ -66,9 +68,7 @@ var MidiPlayer = (function () {
   /**
    * Contains misc static utility methods.
    */
-  var Utils =
-  /*#__PURE__*/
-  function () {
+  var Utils = /*#__PURE__*/function () {
     function Utils() {
       _classCallCheck(this, Utils);
     }
@@ -81,9 +81,9 @@ var MidiPlayer = (function () {
        * @param {number} byte
        * @return {string}
        */
-      value: function byteToHex(byte) {
+      value: function byteToHex(_byte) {
         // Ensure hex string always has two chars
-        return ('0' + byte.toString(16)).slice(-2);
+        return ('0' + _byte.toString(16)).slice(-2);
       }
       /**
        * Converts an array of bytes to a hex string.
@@ -95,8 +95,8 @@ var MidiPlayer = (function () {
       key: "bytesToHex",
       value: function bytesToHex(byteArray) {
         var hex = [];
-        byteArray.forEach(function (byte) {
-          return hex.push(Utils.byteToHex(byte));
+        byteArray.forEach(function (_byte2) {
+          return hex.push(Utils.byteToHex(_byte2));
         });
         return hex.join('');
       }
@@ -132,8 +132,8 @@ var MidiPlayer = (function () {
       key: "bytesToLetters",
       value: function bytesToLetters(byteArray) {
         var letters = [];
-        byteArray.forEach(function (byte) {
-          return letters.push(String.fromCharCode(byte));
+        byteArray.forEach(function (_byte3) {
+          return letters.push(String.fromCharCode(_byte3));
         });
         return letters.join('');
       }
@@ -202,9 +202,7 @@ var MidiPlayer = (function () {
    * Class representing a track.  Contains methods for parsing events and keeping track of pointer.
    */
 
-  var Track =
-  /*#__PURE__*/
-  function () {
+  var Track = /*#__PURE__*/function () {
     function Track(index, data) {
       _classCallCheck(this, Track);
 
@@ -622,9 +620,7 @@ var MidiPlayer = (function () {
    */
 
 
-  var Player =
-  /*#__PURE__*/
-  function () {
+  var Player = /*#__PURE__*/function () {
     function Player(eventHandler, buffer) {
       _classCallCheck(this, Player);
 

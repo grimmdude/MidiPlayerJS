@@ -15,13 +15,12 @@
     "@babel/core": "^7.2.2",
     "@babel/plugin-transform-destructuring": "^7.2.0",
     "@babel/preset-env": "^7.2.3",
+    "@rollup/plugin-babel": "^5.0.0",
     "jsdoc": "^3.5.5",
     "minami": "^1.1.1",
     "mocha": "^5.2.0",
+    "rollup": "^2.9.0",
     "sinon": "^7.1.1",
-    "rollup": "^1.0.1",
-    "rollup-plugin-babel": "^4.2.0",
-    "uglify-js": "^2.7.3",
     "watch": "^1.0.2"
   },
   "directories": {
@@ -41,5 +40,6 @@
     "player"
   ],
   "author": "Garrett Grimm",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {}
 }
