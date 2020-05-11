@@ -1129,7 +1129,7 @@ function () {
         return this.totalTicks - this.tick <= 0;
       }
 
-      return this.bytesProcessed() == this.buffer.length;
+      return this.bytesProcessed() >= this.buffer.length;
     }
     /**
      * Gets the current tick number in playback.

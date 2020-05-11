@@ -2,10 +2,17 @@ import babel from 'rollup-plugin-babel';
 
 export default {
   input: 'src/index.js',
-  output: {
-    file: 'build/index.js',
-    format: 'cjs'
-  },
+  output: [
+    {
+      file: 'build/index.js',
+      format: 'cjs'
+    },
+    {
+      file: 'browser/midiplayer.js',
+      format: 'iife',
+      name: 'MidiPlayer',
+    }
+  ],
   external: ['fs'],
   plugins: [
     babel({
