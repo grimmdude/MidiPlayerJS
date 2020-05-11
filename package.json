@@ -1,6 +1,6 @@
 {
   "name": "midi-player-js",
-  "version": "2.0.6",
+  "version": "2.0.7",
   "description": "Midi parser & player engine for browser or Node. Works well with single or multitrack MIDI files.",
   "main": "build/index.js",
   "browser": "browser/midiplayer.js",
@@ -9,7 +9,8 @@
     "test": "mocha",
     "build": "mkdir -p build && rollup -c && npm run docs",
     "watch": "watch 'npm run build' src",
-    "docs": "jsdoc src README.md -d ./docs -t ./node_modules/minami"
+    "docs": "jsdoc src README.md -d ./docs -t ./node_modules/minami",
+    "postinstall": "node postinstall.js"
   },
   "devDependencies": {
     "@babel/core": "^7.2.2",
