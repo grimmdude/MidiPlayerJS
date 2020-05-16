@@ -16,6 +16,12 @@ class Track	{
 		this.delta = 0;
 		this.runningDelta = 0;
 		this.events = [];
+
+		// Ensure last 3 bytes of track are End of Track event
+		const lastThreeBytes = this.data.subarray(this.data.length - 3, this.data.length);
+		if (!(lastThreeBytes[0] === 0xff && lastThreeBytes[1] === 0x2f && lastThreeBytes[2] === 0x00)) {
+			throw 'Invalid MIDI file; Last three bytes of track ' + this.index + 'must be FF 2F 00 to mark end of track';
+		}
 	}
 
 	/**

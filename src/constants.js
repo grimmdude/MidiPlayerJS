@@ -4,6 +4,7 @@
 const Constants = {
 	VERSION: '2.0.7',
 	NOTES: [],
+	HEADER_CHUNK_LENGTH: 14,
 	CIRCLE_OF_FOURTHS: ['C', 'F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb', 'Cb', 'Fb', 'Bbb', 'Ebb', 'Abb'],
 	CIRCLE_OF_FIFTHS: ['C', 'G', 'D', 'A', 'E', 'B', 'F#', 'C#', 'G#', 'D#', 'A#', 'E#']
 };

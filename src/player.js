@@ -1,3 +1,4 @@
+import {Constants} from './constants';
 import {Track} from './track';
 import {Utils} from './utils';
 
@@ -18,6 +19,7 @@ class Player {
 		this.sampleRate = 5; // milliseconds
 		this.startTime = 0;
 		this.buffer = buffer || null;
+		this.midiChunksByteLength = null;
 		this.division;
 		this.format;
 		this.setIntervalId = false;
@@ -101,6 +103,7 @@ class Player {
 	 * @return {boolean}
 	 */
 	validate() {
+		//console.log((this.buffer.subarray(0, 15)));
 		return Utils.bytesToLetters(this.buffer.subarray(0, 4)) === 'MThd';
 	}
 
@@ -138,6 +141,15 @@ class Player {
 
 			trackOffset += Utils.bytesToNumber(this.buffer.subarray(trackOffset + 4, trackOffset + 8)) + 8;
 		}
+
+		// Get sum of all MIDI chunks here while we're at it
+		let trackChunksByteLength = 0;
+
+		this.tracks.forEach((track) => {
+			trackChunksByteLength += 8 + track.data.length;
+		});
+
+		this.midiChunksByteLength = Constants.HEADER_CHUNK_LENGTH + trackChunksByteLength;
 		return this;
 	}
 
@@ -166,7 +178,7 @@ class Player {
 	 * @return {Player}
 	 */
 	getDivision() {
-		this.division = Utils.bytesToNumber(this.buffer.subarray(12, 14));
+		this.division = Utils.bytesToNumber(this.buffer.subarray(12, Constants.HEADER_CHUNK_LENGTH));
 		return this;
 	}
 
@@ -180,7 +192,7 @@ class Player {
 			this.inLoop = true;
 			this.tick = this.getCurrentTick();
 
-			this.tracks.forEach(function(track) {
+			this.tracks.forEach(function(track, index) {
 				// Handle next event
 				if (!dryRun && this.endOfFile()) {
 					//console.log('end of file')
@@ -323,7 +335,10 @@ class Player {
 	dryRun() {
 		// Reset tracks first
 		this.resetTracks();
-		while (!this.endOfFile()) this.playLoop(true);
+		while (!this.endOfFile()) {
+			this.playLoop(true);
+			//console.log(this.bytesProcessed(), this.buffer.length);
+		}
 		this.events = this.getEvents();
 		this.totalEvents = this.getTotalEvents();
 		this.totalTicks = this.getTotalTicks();
@@ -401,8 +416,7 @@ class Player {
 	 * @return {number}
 	 */
 	bytesProcessed() {
-		// Currently assume header chunk is strictly 14 bytes
-		return 14 + this.tracks.length * 8 + this.tracks.reduce((a, b) => {return {pointer: a.pointer + b.pointer}}, {pointer: 0}).pointer;
+		return Constants.HEADER_CHUNK_LENGTH + this.tracks.length * 8 + this.tracks.reduce((a, b) => {return {pointer: a.pointer + b.pointer}}, {pointer: 0}).pointer;
 	}
 
 	/**
@@ -425,7 +439,7 @@ class Player {
 			return this.totalTicks - this.tick <= 0;
 		}
 
-		return this.bytesProcessed() >= this.buffer.length;
+		return this.bytesProcessed() >= this.midiChunksByteLength;//this.buffer.length;
 	}
 
 	/**
@@ -433,8 +447,13 @@ class Player {
 	 * @return {number}
 	 */
 	getCurrentTick() {
-		if(!this.startTime && this.tick) return this.startTick;
-		else if(!this.startTime) return 0;
+		if(!this.startTime && this.tick) {
+			return this.startTick;
+
+		} else if(!this.startTime){
+			return 0;
+		}
+
 		return Math.round(((new Date()).getTime() - this.startTime) / 1000 * (this.division * (this.tempo / 60))) + this.startTick;
 	}
 
