@@ -43,8 +43,9 @@ var MidiPlayer = (function () {
    * Constants used in player.
    */
   var Constants = {
-    VERSION: '2.0.6',
+    VERSION: '2.0.8',
     NOTES: [],
+    HEADER_CHUNK_LENGTH: 14,
     CIRCLE_OF_FOURTHS: ['C', 'F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb', 'Cb', 'Fb', 'Bbb', 'Ebb', 'Abb'],
     CIRCLE_OF_FIFTHS: ['C', 'G', 'D', 'A', 'E', 'B', 'F#', 'C#', 'G#', 'D#', 'A#', 'E#']
   }; // Builds notes object for reference against binary values.
@@ -215,7 +216,13 @@ var MidiPlayer = (function () {
       this.data = data;
       this.delta = 0;
       this.runningDelta = 0;
-      this.events = [];
+      this.events = []; // Ensure last 3 bytes of track are End of Track event
+
+      var lastThreeBytes = this.data.subarray(this.data.length - 3, this.data.length);
+
+      if (!(lastThreeBytes[0] === 0xff && lastThreeBytes[1] === 0x2f && lastThreeBytes[2] === 0x00)) {
+        throw 'Invalid MIDI file; Last three bytes of track ' + this.index + 'must be FF 2F 00 to mark end of track';
+      }
     }
     /**
      * Resets all stateful track informaion used during playback.
@@ -628,6 +635,7 @@ var MidiPlayer = (function () {
 
       this.startTime = 0;
       this.buffer = buffer || null;
+      this.midiChunksByteLength = null;
       this.division;
       this.format;
       this.setIntervalId = false;
@@ -724,6 +732,7 @@ var MidiPlayer = (function () {
     }, {
       key: "validate",
       value: function validate() {
+        //console.log((this.buffer.subarray(0, 15)));
         return Utils.bytesToLetters(this.buffer.subarray(0, 4)) === 'MThd';
       }
       /**
@@ -764,8 +773,14 @@ var MidiPlayer = (function () {
           }
 
           trackOffset += Utils.bytesToNumber(this.buffer.subarray(trackOffset + 4, trackOffset + 8)) + 8;
-        }
+        } // Get sum of all MIDI chunks here while we're at it
 
+
+        var trackChunksByteLength = 0;
+        this.tracks.forEach(function (track) {
+          trackChunksByteLength += 8 + track.data.length;
+        });
+        this.midiChunksByteLength = Constants.HEADER_CHUNK_LENGTH + trackChunksByteLength;
         return this;
       }
       /**
@@ -800,7 +815,7 @@ var MidiPlayer = (function () {
     }, {
       key: "getDivision",
       value: function getDivision() {
-        this.division = Utils.bytesToNumber(this.buffer.subarray(12, 14));
+        this.division = Utils.bytesToNumber(this.buffer.subarray(12, Constants.HEADER_CHUNK_LENGTH));
         return this;
       }
       /**
@@ -815,7 +830,7 @@ var MidiPlayer = (function () {
         if (!this.inLoop) {
           this.inLoop = true;
           this.tick = this.getCurrentTick();
-          this.tracks.forEach(function (track) {
+          this.tracks.forEach(function (track, index) {
             // Handle next event
             if (!dryRun && this.endOfFile()) {
               //console.log('end of file')
@@ -977,7 +992,7 @@ var MidiPlayer = (function () {
         this.resetTracks();
 
         while (!this.endOfFile()) {
-          this.playLoop(true);
+          this.playLoop(true); //console.log(this.bytesProcessed(), this.buffer.length);
         }
 
         this.events = this.getEvents();
@@ -1086,8 +1101,7 @@ var MidiPlayer = (function () {
     }, {
       key: "bytesProcessed",
       value: function bytesProcessed() {
-        // Currently assume header chunk is strictly 14 bytes
-        return 14 + this.tracks.length * 8 + this.tracks.reduce(function (a, b) {
+        return Constants.HEADER_CHUNK_LENGTH + this.tracks.length * 8 + this.tracks.reduce(function (a, b) {
           return {
             pointer: a.pointer + b.pointer
           };
@@ -1126,7 +1140,7 @@ var MidiPlayer = (function () {
           return this.totalTicks - this.tick <= 0;
         }
 
-        return this.bytesProcessed() >= this.buffer.length;
+        return this.bytesProcessed() >= this.midiChunksByteLength; //this.buffer.length;
       }
       /**
        * Gets the current tick number in playback.
@@ -1136,7 +1150,12 @@ var MidiPlayer = (function () {
     }, {
       key: "getCurrentTick",
       value: function getCurrentTick() {
-        if (!this.startTime && this.tick) return this.startTick;else if (!this.startTime) return 0;
+        if (!this.startTime && this.tick) {
+          return this.startTick;
+        } else if (!this.startTime) {
+          return 0;
+        }
+
         return Math.round((new Date().getTime() - this.startTime) / 1000 * (this.division * (this.tempo / 60))) + this.startTick;
       }
       /**
