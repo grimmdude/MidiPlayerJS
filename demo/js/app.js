@@ -86,7 +86,7 @@ Soundfont.instrument(ac, 'https://raw.githubusercontent.com/gleitz/midi-js-sound
 		document.getElementById('play-button').removeAttribute('disabled');
 
 		//buildTracksHtml();
-		play();
+		//play();
 	}
 
 

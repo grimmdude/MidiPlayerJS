@@ -234,9 +234,11 @@ class Player {
 	/**
 	 * Setter for startTime.
 	 * @param {number} - UTC timestamp
+	 * @return {Player}
 	 */
 	setStartTime(startTime) {
 		this.startTime = startTime;
+		return this;
 	}
 
 	/**

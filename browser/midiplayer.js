@@ -43,7 +43,7 @@ var MidiPlayer = (function () {
    * Constants used in player.
    */
   var Constants = {
-    VERSION: '2.0.8',
+    VERSION: '2.0.9',
     NOTES: [],
     HEADER_CHUNK_LENGTH: 14,
     CIRCLE_OF_FOURTHS: ['C', 'F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb', 'Cb', 'Fb', 'Bbb', 'Ebb', 'Abb'],
@@ -148,6 +148,30 @@ var MidiPlayer = (function () {
       key: "decToBinary",
       value: function decToBinary(dec) {
         return (dec >>> 0).toString(2);
+      }
+      /**
+       * Determines the length in bytes of a variable length quaantity.  The first byte in given range is assumed to be beginning of var length quantity.
+       * @param {array} byteArray
+       * @return {number}
+       */
+
+    }, {
+      key: "getVarIntLength",
+      value: function getVarIntLength(byteArray) {
+        // Get byte count of delta VLV
+        // http://www.ccarh.org/courses/253/handout/vlv/
+        // If byte is greater or equal to 80h (128 decimal) then the next byte
+        // is also part of the VLV,
+        // else byte is the last byte in a VLV.
+        var currentByte = byteArray[0];
+        var byteCount = 1;
+
+        while (currentByte >= 128) {
+          currentByte = byteArray[byteCount];
+          byteCount++;
+        }
+
+        return byteCount;
       }
       /**
        * Reads a variable length value.
@@ -300,20 +324,7 @@ var MidiPlayer = (function () {
     }, {
       key: "getDeltaByteCount",
       value: function getDeltaByteCount() {
-        // Get byte count of delta VLV
-        // http://www.ccarh.org/courses/253/handout/vlv/
-        // If byte is greater or equal to 80h (128 decimal) then the next byte
-        // is also part of the VLV,
-        // else byte is the last byte in a VLV.
-        var currentByte = this.getCurrentByte();
-        var byteCount = 1;
-
-        while (currentByte >= 128) {
-          currentByte = this.data[this.pointer + byteCount];
-          byteCount++;
-        }
-
-        return byteCount;
+        return Utils.getVarIntLength(this.data.subarray(this.pointer));
       }
       /**
        * Get delta value at current pointer position.
@@ -514,11 +525,24 @@ var MidiPlayer = (function () {
           var length = this.data[this.pointer + deltaByteCount + 2]; // Some meta events will have vlv that needs to be handled
 
           this.pointer += deltaByteCount + 3 + length;
-        } else if (this.data[eventStartIndex] == 0xf0) {
+        } else if (this.data[eventStartIndex] === 0xf0) {
           // Sysex
           eventJson.name = 'Sysex';
-          var length = this.data[this.pointer + deltaByteCount + 1];
-          this.pointer += deltaByteCount + 2 + length;
+          var varQuantityByteLength = Utils.getVarIntLength(this.data.subarray(eventStartIndex + 1));
+          var varQuantityByteValue = Utils.readVarInt(this.data.subarray(eventStartIndex + 1, eventStartIndex + 1 + varQuantityByteLength));
+          eventJson.data = this.data.subarray(eventStartIndex + 1 + varQuantityByteLength, eventStartIndex + 1 + varQuantityByteLength + varQuantityByteValue);
+          this.pointer += deltaByteCount + 1 + varQuantityByteLength + varQuantityByteValue;
+        } else if (this.data[eventStartIndex] === 0xf7) {
+          // Sysex (escape)
+          // http://www.somascape.org/midi/tech/mfile.html#sysex
+          eventJson.name = 'Sysex (escape)';
+
+          var _varQuantityByteLength = Utils.getVarIntLength(this.data.subarray(eventStartIndex + 1));
+
+          var _varQuantityByteValue = Utils.readVarInt(this.data.subarray(eventStartIndex + 1, eventStartIndex + 1 + _varQuantityByteLength));
+
+          eventJson.data = this.data.subarray(eventStartIndex + 1 + _varQuantityByteLength, eventStartIndex + 1 + _varQuantityByteLength + _varQuantityByteValue);
+          this.pointer += deltaByteCount + 1 + _varQuantityByteLength + _varQuantityByteValue;
         } else {
           // Voice event
           if (this.data[eventStartIndex] < 0x80) {
@@ -587,7 +611,7 @@ var MidiPlayer = (function () {
               eventJson.channel = this.lastStatus - 0xe0 + 1;
               this.pointer += deltaByteCount + 3;
             } else {
-              eventJson.name = 'Unknown.  Pointer: ' + this.pointer.toString() + ' ' + eventStartIndex.toString() + ' ' + this.data.length;
+              throw "Unknown event: ".concat(this.data[eventStartIndex]); //eventJson.name = `Unknown.  Pointer: ${this.pointer.toString()}, ${eventStartIndex.toString()}, ${this.data[eventStartIndex]}, ${this.data.length}`;
             }
           }
         }
@@ -874,12 +898,14 @@ var MidiPlayer = (function () {
       /**
        * Setter for startTime.
        * @param {number} - UTC timestamp
+       * @return {Player}
        */
 
     }, {
       key: "setStartTime",
       value: function setStartTime(startTime) {
         this.startTime = startTime;
+        return this;
       }
       /**
        * Start playing loaded MIDI file if not already playing.
@@ -992,7 +1018,7 @@ var MidiPlayer = (function () {
         this.resetTracks();
 
         while (!this.endOfFile()) {
-          this.playLoop(true); //console.log(this.bytesProcessed(), this.buffer.length);
+          this.playLoop(true); //console.log(this.bytesProcessed(), this.midiChunksByteLength);
         }
 
         this.events = this.getEvents();

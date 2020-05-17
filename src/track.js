@@ -360,7 +360,8 @@ class Track	{
 					this.pointer += deltaByteCount + 3;
 
 				} else {
-					eventJson.name = `Unknown.  Pointer: ${this.pointer.toString()}, ${eventStartIndex.toString()}, ${this.data[eventStartIndex]}, ${this.data.length}`;
+					throw `Unknown event: ${this.data[eventStartIndex]}`;
+					//eventJson.name = `Unknown.  Pointer: ${this.pointer.toString()}, ${eventStartIndex.toString()}, ${this.data[eventStartIndex]}, ${this.data.length}`;
 				}
 			}
 		}

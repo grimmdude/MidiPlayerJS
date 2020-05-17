@@ -1,6 +1,6 @@
 {
   "name": "midi-player-js",
-  "version": "2.0.8",
+  "version": "2.0.9",
   "description": "Midi parser & player engine for browser or Node. Works well with single or multitrack MIDI files.",
   "main": "build/index.js",
   "browser": "browser/midiplayer.js",
@@ -42,5 +42,6 @@
   ],
   "author": "Garrett Grimm",
   "license": "MIT",
+  "engines" : { "node" : ">=10.0.0" },
   "dependencies": {}
 }
