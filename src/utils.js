@@ -63,6 +63,28 @@ class Utils {
 	}
 
 	/**
+	 * Determines the length in bytes of a variable length quaantity.  The first byte in given range is assumed to be beginning of var length quantity.
+	 * @param {array} byteArray
+	 * @return {number}
+	 */
+	static getVarIntLength(byteArray) {
+		// Get byte count of delta VLV
+		// http://www.ccarh.org/courses/253/handout/vlv/
+		// If byte is greater or equal to 80h (128 decimal) then the next byte
+	    // is also part of the VLV,
+	   	// else byte is the last byte in a VLV.
+	   	let currentByte = byteArray[0];
+	   	let byteCount = 1;
+
+		while (currentByte >= 128) {
+			currentByte = byteArray[byteCount];
+			byteCount++;
+		}
+
+		return byteCount;
+	}
+
+	/**
 	 * Reads a variable length value.
 	 * @param {array} byteArray
 	 * @return {number}

@@ -86,20 +86,7 @@ class Track	{
 	 * @return {number}
 	 */
 	getDeltaByteCount() {
-		// Get byte count of delta VLV
-		// http://www.ccarh.org/courses/253/handout/vlv/
-		// If byte is greater or equal to 80h (128 decimal) then the next byte
-	    // is also part of the VLV,
-	   	// else byte is the last byte in a VLV.
-	   	var currentByte = this.getCurrentByte();
-	   	var byteCount = 1;
-
-		while (currentByte >= 128) {
-			currentByte = this.data[this.pointer + byteCount];
-			byteCount++;
-		}
-
-		return byteCount;
+		return Utils.getVarIntLength(this.data.subarray(this.pointer));
 	}
 
 	/**
@@ -268,11 +255,33 @@ class Track	{
 
 			this.pointer += deltaByteCount + 3 + length;
 
-		} else if(this.data[eventStartIndex] == 0xf0) {
+		} else if (this.data[eventStartIndex] === 0xf0) {
 			// Sysex
 			eventJson.name = 'Sysex';
-			var length = this.data[this.pointer + deltaByteCount + 1];
-			this.pointer += deltaByteCount + 2 + length;
+			const varQuantityByteLength = Utils.getVarIntLength(this.data.subarray(eventStartIndex + 1));
+			const varQuantityByteValue = Utils.readVarInt(this.data.subarray(eventStartIndex + 1, eventStartIndex + 1 + varQuantityByteLength));
+
+			eventJson.data = this.data.subarray(
+				eventStartIndex + 1 + varQuantityByteLength,
+				eventStartIndex + 1 + varQuantityByteLength + varQuantityByteValue
+			);
+
+			this.pointer += deltaByteCount + 1 + varQuantityByteLength + varQuantityByteValue;
+
+		} else if (this.data[eventStartIndex] === 0xf7) {
+			// Sysex (escape)
+			// http://www.somascape.org/midi/tech/mfile.html#sysex
+			eventJson.name = 'Sysex (escape)';
+
+			const varQuantityByteLength = Utils.getVarIntLength(this.data.subarray(eventStartIndex + 1));
+			const varQuantityByteValue = Utils.readVarInt(this.data.subarray(eventStartIndex + 1, eventStartIndex + 1 + varQuantityByteLength));
+
+			eventJson.data = this.data.subarray(
+				eventStartIndex + 1 + varQuantityByteLength,
+				eventStartIndex + 1 + varQuantityByteLength + varQuantityByteValue
+			);
+
+			this.pointer += deltaByteCount + 1 + varQuantityByteLength + varQuantityByteValue;
 
 		} else {
 			// Voice event
@@ -351,7 +360,7 @@ class Track	{
 					this.pointer += deltaByteCount + 3;
 
 				} else {
-					eventJson.name = 'Unknown.  Pointer: ' + this.pointer.toString() + ' '  + eventStartIndex.toString() + ' ' + this.data.length;
+					eventJson.name = `Unknown.  Pointer: ${this.pointer.toString()}, ${eventStartIndex.toString()}, ${this.data[eventStartIndex]}, ${this.data.length}`;
 				}
 			}
 		}
