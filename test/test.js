@@ -65,6 +65,13 @@ describe('MidiPlayerJS', function() {
 				//assert.equal(3330, Player.buffer.length);
 				//assert.equal(2, Player.tracks.length);
 			});
+
+			it('should load O-Zone_-_Dragostea_Din_Tei.mid file correctly.', function () {
+				var Player = new MidiPlayer.Player();
+				Player.loadFile('demo/midi/O-Zone_-_Dragostea_Din_Tei.mid');
+				//assert.equal(3330, Player.buffer.length);
+				//assert.equal(2, Player.tracks.length);
+			});
 		});
 
 		describe('#loadDataUri()', function () {

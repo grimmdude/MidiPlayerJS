@@ -234,9 +234,11 @@ class Player {
 	/**
 	 * Setter for startTime.
 	 * @param {number} - UTC timestamp
+	 * @return {Player}
 	 */
 	setStartTime(startTime) {
 		this.startTime = startTime;
+		return this;
 	}
 
 	/**
@@ -337,7 +339,7 @@ class Player {
 		this.resetTracks();
 		while (!this.endOfFile()) {
 			this.playLoop(true);
-			//console.log(this.bytesProcessed(), this.buffer.length);
+			//console.log(this.bytesProcessed(), this.midiChunksByteLength);
 		}
 		this.events = this.getEvents();
 		this.totalEvents = this.getTotalEvents();
