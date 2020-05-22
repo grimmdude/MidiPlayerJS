@@ -254,8 +254,19 @@ class Player {
 		// Start play loop
 		//window.requestAnimationFrame(this.playLoop.bind(this));
 		this.setIntervalId = setInterval(this.playLoop.bind(this), this.sampleRate);
-
+		//this.setIntervalId = this.loop();
 		return this;
+	}
+
+	loop() {
+		setTimeout(function () {
+	        // Do Something Here
+	        this.playLoop();
+
+	        // Then recall the parent function to
+	        // create a recursive loop.
+	        this.loop();
+	    }.bind(this), this.sampleRate);
 	}
 
 	/**
