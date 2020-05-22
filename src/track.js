@@ -295,13 +295,51 @@ class Track	{
 				if (this.lastStatus <= 0x8f) {
 					eventJson.name = 'Note off';
 					eventJson.channel = this.lastStatus - 0x80 + 1;
+					this.pointer += deltaByteCount + 2;
 
 				} else if (this.lastStatus <= 0x9f) {
 					eventJson.name = 'Note on';
 					eventJson.channel = this.lastStatus - 0x90 + 1;
-				}
+					this.pointer += deltaByteCount + 2;
 
-				this.pointer += deltaByteCount + 2;
+				} else if (this.lastStatus <= 0xaf) {
+					// Polyphonic Key Pressure
+					eventJson.name = 'Polyphonic Key Pressure';
+					eventJson.channel = this.lastStatus - 0xa0 + 1;
+					eventJson.note = Constants.NOTES[this.data[eventStartIndex + 1]];
+					eventJson.pressure = event[1];
+					this.pointer += deltaByteCount + 2;
+
+				} else if (this.lastStatus <= 0xbf) {
+					// Controller Change
+					eventJson.name = 'Controller Change';
+					eventJson.channel = this.lastStatus - 0xb0 + 1;
+					eventJson.number = this.data[eventStartIndex + 1];
+					eventJson.value = this.data[eventStartIndex + 2];
+					this.pointer += deltaByteCount + 2;
+
+				} else if (this.lastStatus <= 0xcf) {
+					// Program Change
+					eventJson.name = 'Program Change';
+					eventJson.channel = this.lastStatus - 0xc0 + 1;
+					eventJson.value = this.data[eventStartIndex + 1];
+					this.pointer += deltaByteCount + 1;
+
+				} else if (this.lastStatus <= 0xdf) {
+					// Channel Key Pressure
+					eventJson.name = 'Channel Key Pressure';
+					eventJson.channel = this.lastStatus - 0xd0 + 1;
+					this.pointer += deltaByteCount + 1;
+
+				} else if (this.lastStatus <= 0xef) {
+					// Pitch Bend
+					eventJson.name = 'Pitch Bend';
+					eventJson.channel = this.lastStatus - 0xe0 + 1;
+					this.pointer += deltaByteCount + 2;
+
+				} else {
+					throw `Unknown event (running): ${this.lastStatus}`;
+				}
 
 			} else {
 				this.lastStatus = this.data[eventStartIndex];
