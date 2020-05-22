@@ -42,7 +42,7 @@ function _createClass(Constructor, protoProps, staticProps) {
  * Constants used in player.
  */
 var Constants = {
-  VERSION: '2.0.9',
+  VERSION: '2.0.10',
   NOTES: [],
   HEADER_CHUNK_LENGTH: 14,
   CIRCLE_OF_FOURTHS: ['C', 'F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb', 'Cb', 'Fb', 'Bbb', 'Ebb', 'Abb'],
@@ -554,12 +554,44 @@ var Track = /*#__PURE__*/function () {
           if (this.lastStatus <= 0x8f) {
             eventJson.name = 'Note off';
             eventJson.channel = this.lastStatus - 0x80 + 1;
+            this.pointer += deltaByteCount + 2;
           } else if (this.lastStatus <= 0x9f) {
             eventJson.name = 'Note on';
             eventJson.channel = this.lastStatus - 0x90 + 1;
+            this.pointer += deltaByteCount + 2;
+          } else if (this.lastStatus <= 0xaf) {
+            // Polyphonic Key Pressure
+            eventJson.name = 'Polyphonic Key Pressure';
+            eventJson.channel = this.lastStatus - 0xa0 + 1;
+            eventJson.note = Constants.NOTES[this.data[eventStartIndex + 1]];
+            eventJson.pressure = event[1];
+            this.pointer += deltaByteCount + 2;
+          } else if (this.lastStatus <= 0xbf) {
+            // Controller Change
+            eventJson.name = 'Controller Change';
+            eventJson.channel = this.lastStatus - 0xb0 + 1;
+            eventJson.number = this.data[eventStartIndex + 1];
+            eventJson.value = this.data[eventStartIndex + 2];
+            this.pointer += deltaByteCount + 2;
+          } else if (this.lastStatus <= 0xcf) {
+            // Program Change
+            eventJson.name = 'Program Change';
+            eventJson.channel = this.lastStatus - 0xc0 + 1;
+            eventJson.value = this.data[eventStartIndex + 1];
+            this.pointer += deltaByteCount + 1;
+          } else if (this.lastStatus <= 0xdf) {
+            // Channel Key Pressure
+            eventJson.name = 'Channel Key Pressure';
+            eventJson.channel = this.lastStatus - 0xd0 + 1;
+            this.pointer += deltaByteCount + 1;
+          } else if (this.lastStatus <= 0xef) {
+            // Pitch Bend
+            eventJson.name = 'Pitch Bend';
+            eventJson.channel = this.lastStatus - 0xe0 + 1;
+            this.pointer += deltaByteCount + 2;
+          } else {
+            throw "Unknown event (running): ".concat(this.lastStatus);
           }
-
-          this.pointer += deltaByteCount + 2;
         } else {
           this.lastStatus = this.data[eventStartIndex];
 
@@ -919,8 +951,20 @@ var Player = /*#__PURE__*/function () {
       if (!this.startTime) this.startTime = new Date().getTime(); // Start play loop
       //window.requestAnimationFrame(this.playLoop.bind(this));
 
-      this.setIntervalId = setInterval(this.playLoop.bind(this), this.sampleRate);
+      this.setIntervalId = setInterval(this.playLoop.bind(this), this.sampleRate); //this.setIntervalId = this.loop();
+
       return this;
+    }
+  }, {
+    key: "loop",
+    value: function loop() {
+      setTimeout(function () {
+        // Do Something Here
+        this.playLoop(); // Then recall the parent function to
+        // create a recursive loop.
+
+        this.loop();
+      }.bind(this), this.sampleRate);
     }
     /**
      * Pauses playback if playing.
