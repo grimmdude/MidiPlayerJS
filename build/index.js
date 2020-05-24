@@ -42,7 +42,7 @@ function _createClass(Constructor, protoProps, staticProps) {
  * Constants used in player.
  */
 var Constants = {
-  VERSION: '2.0.10',
+  VERSION: '2.0.11',
   NOTES: [],
   HEADER_CHUNK_LENGTH: 14,
   CIRCLE_OF_FOURTHS: ['C', 'F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb', 'Cb', 'Fb', 'Bbb', 'Ebb', 'Abb'],
@@ -522,6 +522,7 @@ var Track = /*#__PURE__*/function () {
         }
 
         var length = this.data[this.pointer + deltaByteCount + 2]; // Some meta events will have vlv that needs to be handled
+        //console.log(eventJson);
 
         this.pointer += deltaByteCount + 3 + length;
       } else if (this.data[eventStartIndex] === 0xf0) {
