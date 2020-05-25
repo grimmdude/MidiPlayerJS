@@ -8,5 +8,5 @@ debugger;
 
 // Load a MIDI file
 //Player.loadFile('./demo/midi/zelda.mid');
-Player.loadFile('./demo/midi/500_Miles.mid');
+Player.loadFile('./demo/midi/Death Waltz.mid');
 //Player.play();

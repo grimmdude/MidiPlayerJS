@@ -42,7 +42,7 @@ function _createClass(Constructor, protoProps, staticProps) {
  * Constants used in player.
  */
 var Constants = {
-  VERSION: '2.0.10',
+  VERSION: '2.0.12',
   NOTES: [],
   HEADER_CHUNK_LENGTH: 14,
   CIRCLE_OF_FOURTHS: ['C', 'F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb', 'Cb', 'Fb', 'Bbb', 'Ebb', 'Abb'],
@@ -375,10 +375,10 @@ var Track = /*#__PURE__*/function () {
   }, {
     key: "getStringData",
     value: function getStringData(eventStartIndex) {
-      var currentByte = this.pointer;
-      var byteCount = 1;
-      var length = Utils.readVarInt(this.data.subarray(eventStartIndex + 2, eventStartIndex + 2 + byteCount));
-      return Utils.bytesToLetters(this.data.subarray(eventStartIndex + byteCount + 2, eventStartIndex + byteCount + length + 2));
+      var varIntLength = Utils.getVarIntLength(this.data.subarray(eventStartIndex + 2));
+      var varIntValue = Utils.readVarInt(this.data.subarray(eventStartIndex + 2, eventStartIndex + 2 + varIntLength));
+      var letters = Utils.bytesToLetters(this.data.subarray(eventStartIndex + 2 + varIntLength, eventStartIndex + 2 + varIntLength + varIntValue));
+      return letters;
     }
     /**
      * Parses event into JSON and advances pointer for the track
@@ -521,9 +521,10 @@ var Track = /*#__PURE__*/function () {
             break;
         }
 
-        var length = this.data[this.pointer + deltaByteCount + 2]; // Some meta events will have vlv that needs to be handled
+        var varIntLength = Utils.getVarIntLength(this.data.subarray(eventStartIndex + 2));
+        var length = Utils.readVarInt(this.data.subarray(eventStartIndex + 2, eventStartIndex + 2 + varIntLength)); //console.log(eventJson);
 
-        this.pointer += deltaByteCount + 3 + length;
+        this.pointer += deltaByteCount + 3 + length; //console.log(eventJson);
       } else if (this.data[eventStartIndex] === 0xf0) {
         // Sysex
         eventJson.name = 'Sysex';
@@ -906,7 +907,18 @@ var Player = /*#__PURE__*/function () {
                   this.instruments.push(event.value);
                 }
               }
-            } else if (event) this.emitEvent(event);
+            } else if (event) {
+              if (event.hasOwnProperty('name') && event.name === 'Set Tempo') {
+                // Grab tempo if available.
+                this.setTempo(event.data);
+
+                if (this.isPlaying()) {
+                  this.pause().play();
+                }
+              }
+
+              this.emitEvent(event);
+            }
           }
         }, this);
         if (!dryRun) this.triggerPlayerEvent('playing', {
@@ -950,9 +962,9 @@ var Player = /*#__PURE__*/function () {
 
       if (!this.startTime) this.startTime = new Date().getTime(); // Start play loop
       //window.requestAnimationFrame(this.playLoop.bind(this));
+      //this.setIntervalId = setInterval(this.playLoop.bind(this), this.sampleRate);
 
-      this.setIntervalId = setInterval(this.playLoop.bind(this), this.sampleRate); //this.setIntervalId = this.loop();
-
+      this.setIntervalId = this.loop();
       return this;
     }
   }, {

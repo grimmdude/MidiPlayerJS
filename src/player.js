@@ -212,7 +212,19 @@ class Player {
 								this.instruments.push(event.value);
 							}
 						}
-					} else if (event) this.emitEvent(event);
+
+					} else if (event) {
+						if (event.hasOwnProperty('name') && event.name === 'Set Tempo') {
+							// Grab tempo if available.
+							this.setTempo(event.data);
+
+							if (this.isPlaying()) {
+								this.pause().play();
+							}
+						}
+
+						this.emitEvent(event);
+					}
 				}
 
 			}, this);
@@ -253,8 +265,8 @@ class Player {
 
 		// Start play loop
 		//window.requestAnimationFrame(this.playLoop.bind(this));
-		this.setIntervalId = setInterval(this.playLoop.bind(this), this.sampleRate);
-		//this.setIntervalId = this.loop();
+		//this.setIntervalId = setInterval(this.playLoop.bind(this), this.sampleRate);
+		this.setIntervalId = this.loop();
 		return this;
 	}
 
