@@ -374,7 +374,7 @@ class Player {
 		// Leave tracks in pristine condish
 		this.resetTracks();
 
-		console.log('Song time: ' + this.getSongTime() + ' seconds / ' + this.totalTicks + ' ticks.');
+		//console.log('Song time: ' + this.getSongTime() + ' seconds / ' + this.totalTicks + ' ticks.');
 
 		this.triggerPlayerEvent('fileLoaded', this);
 		return this;
