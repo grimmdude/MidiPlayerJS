@@ -136,7 +136,7 @@ class Player {
 		while (trackOffset < this.buffer.length) {
 			if (Utils.bytesToLetters(this.buffer.subarray(trackOffset, trackOffset + 4)) == 'MTrk') {
 				let trackLength = Utils.bytesToNumber(this.buffer.subarray(trackOffset + 4, trackOffset + 8));
-				this.tracks.push(new Track(this.tracks.length, this.buffer.subarray(trackOffset + 8, trackOffset + 8 + trackLength)));
+				this.tracks.push(new Track(this.tracks.length, this.buffer.subarray(trackOffset + 8, trackOffset + 8 + trackLength), this));
 			}
 
 			trackOffset += Utils.bytesToNumber(this.buffer.subarray(trackOffset + 4, trackOffset + 8)) + 8;
@@ -212,7 +212,20 @@ class Player {
 								this.instruments.push(event.value);
 							}
 						}
-					} else if (event) this.emitEvent(event);
+
+					} else if (event) {
+						if (event.hasOwnProperty('name') && event.name === 'Set Tempo') {
+							// Grab tempo if available.
+							this.defaultTempo = event.data;
+							this.setTempo(event.data);
+
+							if (this.isPlaying()) {
+								this.pause().play();
+							}
+						}
+
+						this.emitEvent(event);
+					}
 				}
 
 			}, this);
@@ -361,7 +374,7 @@ class Player {
 		// Leave tracks in pristine condish
 		this.resetTracks();
 
-		//console.log('Song time: ' + this.getSongTime() + ' seconds / ' + this.totalTicks + ' ticks.');
+		console.log('Song time: ' + this.getSongTime() + ' seconds / ' + this.totalTicks + ' ticks.');
 
 		this.triggerPlayerEvent('fileLoaded', this);
 		return this;

@@ -133,12 +133,11 @@ class Track	{
 	 * @return {string}
 	 */
 	getStringData(eventStartIndex) {
-		var currentByte = this.pointer;
-		var byteCount = 1;
-		var length = Utils.readVarInt(this.data.subarray(eventStartIndex + 2, eventStartIndex + 2 + byteCount));
-		var stringLength = length;
+		const varIntLength = Utils.getVarIntLength(this.data.subarray(eventStartIndex + 2));
+		const varIntValue = Utils.readVarInt(this.data.subarray(eventStartIndex + 2, eventStartIndex + 2 + varIntLength));
+		const letters = Utils.bytesToLetters(this.data.subarray(eventStartIndex + 2 + varIntLength, eventStartIndex + 2 + varIntLength + varIntValue));
 
-		return Utils.bytesToLetters(this.data.subarray(eventStartIndex + byteCount + 2, eventStartIndex + byteCount + length + 2));
+		return letters;
 	}
 
 	/**
@@ -250,11 +249,13 @@ class Track	{
 					break;
 			}
 
-			var length = this.data[this.pointer + deltaByteCount + 2];
-			// Some meta events will have vlv that needs to be handled
+			const varIntLength = Utils.getVarIntLength(this.data.subarray(eventStartIndex + 2));
+			const length = Utils.readVarInt(this.data.subarray(eventStartIndex + 2, eventStartIndex + 2 + varIntLength));
 
 			//console.log(eventJson);
 			this.pointer += deltaByteCount + 3 + length;
+
+			//console.log(eventJson);
 
 		} else if (this.data[eventStartIndex] === 0xf0) {
 			// Sysex
@@ -268,7 +269,6 @@ class Track	{
 			);
 
 			this.pointer += deltaByteCount + 1 + varQuantityByteLength + varQuantityByteValue;
-
 		} else if (this.data[eventStartIndex] === 0xf7) {
 			// Sysex (escape)
 			// http://www.somascape.org/midi/tech/mfile.html#sysex
@@ -283,7 +283,6 @@ class Track	{
 			);
 
 			this.pointer += deltaByteCount + 1 + varQuantityByteLength + varQuantityByteValue;
-
 		} else {
 			// Voice event
 			if (this.data[eventStartIndex] < 0x80) {
