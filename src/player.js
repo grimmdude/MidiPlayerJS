@@ -265,8 +265,8 @@ class Player {
 
 		// Start play loop
 		//window.requestAnimationFrame(this.playLoop.bind(this));
-		//this.setIntervalId = setInterval(this.playLoop.bind(this), this.sampleRate);
-		this.setIntervalId = this.loop();
+		this.setIntervalId = setInterval(this.playLoop.bind(this), this.sampleRate);
+		//this.setIntervalId = this.loop();
 		return this;
 	}
 
