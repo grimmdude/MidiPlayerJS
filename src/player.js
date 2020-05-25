@@ -216,7 +216,6 @@ class Player {
 					} else if (event) {
 						if (event.hasOwnProperty('name') && event.name === 'Set Tempo') {
 							// Grab tempo if available.
-							this.defaultTempo = event.data;
 							this.setTempo(event.data);
 
 							if (this.isPlaying()) {
@@ -266,8 +265,8 @@ class Player {
 
 		// Start play loop
 		//window.requestAnimationFrame(this.playLoop.bind(this));
-		this.setIntervalId = setInterval(this.playLoop.bind(this), this.sampleRate);
-		//this.setIntervalId = this.loop();
+		//this.setIntervalId = setInterval(this.playLoop.bind(this), this.sampleRate);
+		this.setIntervalId = this.loop();
 		return this;
 	}
 

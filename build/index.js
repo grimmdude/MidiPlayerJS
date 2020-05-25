@@ -42,7 +42,7 @@ function _createClass(Constructor, protoProps, staticProps) {
  * Constants used in player.
  */
 var Constants = {
-  VERSION: '2.0.11',
+  VERSION: '2.0.12',
   NOTES: [],
   HEADER_CHUNK_LENGTH: 14,
   CIRCLE_OF_FOURTHS: ['C', 'F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb', 'Cb', 'Fb', 'Bbb', 'Ebb', 'Abb'],
@@ -825,7 +825,7 @@ var Player = /*#__PURE__*/function () {
       while (trackOffset < this.buffer.length) {
         if (Utils.bytesToLetters(this.buffer.subarray(trackOffset, trackOffset + 4)) == 'MTrk') {
           var trackLength = Utils.bytesToNumber(this.buffer.subarray(trackOffset + 4, trackOffset + 8));
-          this.tracks.push(new Track(this.tracks.length, this.buffer.subarray(trackOffset + 8, trackOffset + 8 + trackLength), this));
+          this.tracks.push(new Track(this.tracks.length, this.buffer.subarray(trackOffset + 8, trackOffset + 8 + trackLength)));
         }
 
         trackOffset += Utils.bytesToNumber(this.buffer.subarray(trackOffset + 4, trackOffset + 8)) + 8;
@@ -910,7 +910,6 @@ var Player = /*#__PURE__*/function () {
             } else if (event) {
               if (event.hasOwnProperty('name') && event.name === 'Set Tempo') {
                 // Grab tempo if available.
-                this.defaultTempo = event.data;
                 this.setTempo(event.data);
 
                 if (this.isPlaying()) {
@@ -963,9 +962,9 @@ var Player = /*#__PURE__*/function () {
 
       if (!this.startTime) this.startTime = new Date().getTime(); // Start play loop
       //window.requestAnimationFrame(this.playLoop.bind(this));
+      //this.setIntervalId = setInterval(this.playLoop.bind(this), this.sampleRate);
 
-      this.setIntervalId = setInterval(this.playLoop.bind(this), this.sampleRate); //this.setIntervalId = this.loop();
-
+      this.setIntervalId = this.loop();
       return this;
     }
   }, {
@@ -1083,8 +1082,8 @@ var Player = /*#__PURE__*/function () {
       this.startTick = 0;
       this.startTime = 0; // Leave tracks in pristine condish
 
-      this.resetTracks();
-      console.log('Song time: ' + this.getSongTime() + ' seconds / ' + this.totalTicks + ' ticks.');
+      this.resetTracks(); //console.log('Song time: ' + this.getSongTime() + ' seconds / ' + this.totalTicks + ' ticks.');
+
       this.triggerPlayerEvent('fileLoaded', this);
       return this;
     }
