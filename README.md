@@ -32,14 +32,17 @@ There are a handful of events on the `Player` object which you can subscribe to 
 Player.on('fileLoaded', function() {
     // Do something when file is loaded
 });
+
 Player.on('playing', function(currentTick) {
     // Do something while player is playing
     // (this is repeatedly triggered within the play loop)
 });
+
 Player.on('midiEvent', function(event) {
     // Do something when a MIDI event is fired.
     // (this is the same as passing a function to MidiPlayer.Player() when instantiating.
 });
+
 Player.on('endOfFile', function() {
     // Do something when end of the file has been reached.
 });
