@@ -154,6 +154,7 @@ class Track	{
 		this.runningDelta += eventJson.delta;
 		eventJson.tick = this.runningDelta;
 		eventJson.byteIndex = this.pointer;
+		eventJson.rawEventCode = this.data[eventStartIndex];
 
 		//eventJson.raw = event;
 		if (this.data[eventStartIndex] == 0xff) {
@@ -163,6 +164,7 @@ class Track	{
 			// otherwise if we let it run through the next cycle a slight delay will accumulate if multiple tracks
 			// are being played simultaneously
 
+			eventJson.rawEventCode += this.data[eventStartIndex + 1];
 			switch(this.data[eventStartIndex + 1]) {
 				case 0x00: // Sequence Number
 					eventJson.name = 'Sequence Number';
