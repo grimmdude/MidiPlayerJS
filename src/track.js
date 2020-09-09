@@ -164,7 +164,7 @@ class Track	{
 			// otherwise if we let it run through the next cycle a slight delay will accumulate if multiple tracks
 			// are being played simultaneously
 
-			eventJson.rawEventCode += this.data[eventStartIndex + 1];
+			eventJson.rawEventCode = this.data[eventStartIndex + 1] << 8 + eventJson.rawEventCode;
 			switch(this.data[eventStartIndex + 1]) {
 				case 0x00: // Sequence Number
 					eventJson.name = 'Sequence Number';
