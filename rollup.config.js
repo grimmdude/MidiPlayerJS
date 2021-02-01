@@ -10,6 +10,11 @@ export default [
         format: "iife",
         name: "MidiPlayer",
       },
+      {
+        file: "build/index.browser.js",
+        format: "es",
+        name: "MidiPlayer",
+      },
     ],
     plugins: [
       replace({ "process.browser": true }),
