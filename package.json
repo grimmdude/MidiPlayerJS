@@ -10,6 +10,7 @@
     "build": "rollup -c && npm run docs",
     "watch": "watch 'npm run build' src",
     "docs": "jsdoc src README.md -d ./docs -t ./node_modules/minami",
+    "prepare": "npm run build",
     "postinstall": "node postinstall.js",
     "prepublishOnly": "npm test"
   },
