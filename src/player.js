@@ -45,9 +45,13 @@ class Player {
 	 * @return {Player}
 	 */
 	loadFile(path) {
-		var fs = require('fs');
-		this.buffer = fs.readFileSync(path);
-		return this.fileLoaded();
+		if (!process.browser) {
+			var fs = require('fs');
+			this.buffer = fs.readFileSync(path);
+			return this.fileLoaded();
+		} else {
+			throw 'loadFile is only supported on Node.js';
+		}
 	}
 
 	/**
