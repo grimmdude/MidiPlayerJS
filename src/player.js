@@ -192,6 +192,7 @@ class Player {
 	 * @return {undefined}
 	 */
 	playLoop(dryRun) {
+		var hadEvent = false;
 		if (!this.inLoop) {
 			this.inLoop = true;
 			this.tick = this.getCurrentTick();
@@ -204,6 +205,8 @@ class Player {
 					this.stop();
 				} else {
 					let event = track.handleEvent(this.tick, dryRun);
+					
+					if (event) hadEvent = true;
 
 					if (dryRun && event) {
 						if (event.hasOwnProperty('name') && event.name === 'Set Tempo') {
@@ -236,6 +239,7 @@ class Player {
 			if (!dryRun) this.triggerPlayerEvent('playing', {tick: this.tick});
 			this.inLoop = false;
 		}
+		return hadEvent;
 	}
 
 	/**
@@ -269,7 +273,9 @@ class Player {
 
 		// Start play loop
 		//window.requestAnimationFrame(this.playLoop.bind(this));
-		this.setIntervalId = setInterval(this.playLoop.bind(this), this.sampleRate);
+		this.setIntervalId = setInterval(() => {
+			while (this.playLoop()) {}
+		}, this.sampleRate);
 		//this.setIntervalId = this.loop();
 		return this;
 	}
