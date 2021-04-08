@@ -3,12 +3,14 @@
   "version": "2.0.13",
   "description": "Midi parser & player engine for browser or Node. Works well with single or multitrack MIDI files.",
   "main": "build/index.js",
+  "browser": "build/index.browser.js",
   "scripts": {
     "pretest": "npm run build",
     "test": "mocha",
-    "build": "mkdir -p build && rollup -c && npm run docs",
+    "build": "rollup -c && npm run docs",
     "watch": "watch 'npm run build' src",
     "docs": "jsdoc src README.md -d ./docs -t ./node_modules/minami",
+    "prepare": "npm run build",
     "postinstall": "node postinstall.js",
     "prepublishOnly": "npm test"
   },
@@ -17,6 +19,7 @@
     "@babel/plugin-transform-destructuring": "^7.2.0",
     "@babel/preset-env": "^7.9.6",
     "@rollup/plugin-babel": "^5.0.0",
+    "@rollup/plugin-replace": "^2.3.4",
     "jsdoc": "^3.5.5",
     "minami": "^1.1.1",
     "mocha": "^5.2.0",

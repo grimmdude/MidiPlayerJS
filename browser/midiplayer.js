@@ -720,10 +720,9 @@ var MidiPlayer = (function () {
     _createClass(Player, [{
       key: "loadFile",
       value: function loadFile(path) {
-        var fs = require('fs');
-
-        this.buffer = fs.readFileSync(path);
-        return this.fileLoaded();
+        {
+          throw 'loadFile is only supported on Node.js';
+        }
       }
       /**
        * Load an array buffer into the player.
