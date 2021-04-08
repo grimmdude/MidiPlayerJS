@@ -1,3 +1,7 @@
 .DS_Store
 npm-debug.log
 node_modules
+<<<<<<< HEAD
+=======
+build
+>>>>>>> 6ea2b62c700d8a8d04a8550bde89b5d7f9c30a31

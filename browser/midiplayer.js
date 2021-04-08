@@ -43,7 +43,7 @@ var MidiPlayer = (function () {
    * Constants used in player.
    */
   var Constants = {
-    VERSION: '2.0.13',
+    VERSION: '2.0.14',
     NOTES: [],
     HEADER_CHUNK_LENGTH: 14,
     CIRCLE_OF_FOURTHS: ['C', 'F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb', 'Cb', 'Fb', 'Bbb', 'Ebb', 'Abb'],
@@ -720,10 +720,9 @@ var MidiPlayer = (function () {
     _createClass(Player, [{
       key: "loadFile",
       value: function loadFile(path) {
-        var fs = require('fs');
-
-        this.buffer = fs.readFileSync(path);
-        return this.fileLoaded();
+        {
+          throw 'loadFile is only supported on Node.js';
+        }
       }
       /**
        * Load an array buffer into the player.
