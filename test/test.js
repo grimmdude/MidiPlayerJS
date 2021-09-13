@@ -115,6 +115,16 @@ describe('MidiPlayerJS', function() {
 			})
 		});
 
+		describe('#getCurrentTick', function () {
+			it('should return correct tick when skipping without playing.', function () {
+				const skipTicks = 500;
+				const Player = new MidiPlayer.Player();
+				Player.loadDataUri(zelda);
+				Player.skipToTick(skipTicks);
+				assert.equal(Player.getCurrentTick(), skipTicks);
+			})
+		});
+
 		describe('#getSongTimeRemaining', function () {
 			let Player;
 			beforeEach(function () {
