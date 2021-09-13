@@ -335,6 +335,7 @@ class Track	{
 					// Pitch Bend
 					eventJson.name = 'Pitch Bend';
 					eventJson.channel = this.lastStatus - 0xe0 + 1;
+					eventJson.value = this.data[eventStartIndex + 2]
 					this.pointer += deltaByteCount + 2;
 
 				} else {
