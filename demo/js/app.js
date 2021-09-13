@@ -41,8 +41,9 @@ Soundfont.instrument(ac, 'https://raw.githubusercontent.com/gleitz/midi-js-sound
 	document.getElementById('select-file').style.display = 'block';
 
 	loadFile = function() {
-		var file    = document.querySelector('input[type=file]').files[0];
-		var reader  = new FileReader();
+		Player.stop();
+		var file = document.querySelector('input[type=file]').files[0];
+		var reader = new FileReader();
 		if (file) reader.readAsArrayBuffer(file);
 
 		eventsDiv.innerHTML = '';

@@ -2,7 +2,7 @@
  * Constants used in player.
  */
 const Constants = {
-	VERSION: '2.0.14',
+	VERSION: require('../package.json').version,
 	NOTES: [],
 	HEADER_CHUNK_LENGTH: 14,
 	CIRCLE_OF_FOURTHS: ['C', 'F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb', 'Cb', 'Fb', 'Bbb', 'Ebb', 'Abb'],

@@ -17,7 +17,10 @@ export default [
       },
     ],
     plugins: [
-      replace({ "process.browser": true }),
+      replace({
+        "process.browser": true,
+        "preventAssignment": true 
+      }),
       babel({
         exclude: "node_modules/**", // only transpile our source code
         plugins: ["@babel/plugin-transform-destructuring"],
@@ -33,7 +36,10 @@ export default [
       },
     ],
     plugins: [
-      replace({ "process.browser": false }),
+      replace({
+        "process.browser": false,
+        "preventAssignment": true
+      }),
       babel({
         exclude: "node_modules/**", // only transpile our source code
         plugins: ["@babel/plugin-transform-destructuring"],

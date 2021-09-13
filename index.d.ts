@@ -315,6 +315,13 @@ declare module "midi-player-js" {
             skipToPercent(percent: number): this;
 
             /**
+             * Skips player pointer to specified seconds.
+             * @param {number} - Seconds to skip to.
+             * @return {this}
+             */
+            skipToSeconds(seconds: number): this;
+
+            /**
              * Skips player pointer to specified tick.
              * @param {number} - Tick to skip to.
              * @return {this}
