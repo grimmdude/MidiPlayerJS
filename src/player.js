@@ -476,13 +476,7 @@ class Player {
 	 * @return {number}
 	 */
 	getCurrentTick() {
-		if(!this.startTime && this.tick) {
-			return this.startTick;
-
-		} else if(!this.startTime){
-			return 0;
-		}
-
+		if(!this.startTime) return this.startTick;
 		return Math.round(((new Date()).getTime() - this.startTime) / 1000 * (this.division * (this.tempo / 60))) + this.startTick;
 	}
 
