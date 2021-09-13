@@ -112,7 +112,7 @@ class Utils {
 	 */
 	static atob(string) {
 		if (typeof atob === 'function') return atob(string);
-		return new Buffer(string, 'base64').toString('binary');
+		return Buffer.from(string, 'base64').toString('binary');
 	}
 }
 
