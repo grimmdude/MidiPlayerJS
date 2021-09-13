@@ -43,7 +43,7 @@ var MidiPlayer = (function () {
    * Constants used in player.
    */
   var Constants = {
-    VERSION: '2.0.14',
+    VERSION: require('../package.json').version,
     NOTES: [],
     HEADER_CHUNK_LENGTH: 14,
     CIRCLE_OF_FOURTHS: ['C', 'F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb', 'Cb', 'Fb', 'Bbb', 'Ebb', 'Abb'],
@@ -76,13 +76,13 @@ var MidiPlayer = (function () {
 
     _createClass(Utils, null, [{
       key: "byteToHex",
-
+      value:
       /**
        * Converts a single byte to a hex string.
        * @param {number} byte
        * @return {string}
        */
-      value: function byteToHex(_byte) {
+      function byteToHex(_byte) {
         // Ensure hex string always has two chars
         return ('0' + _byte.toString(16)).slice(-2);
       }
@@ -216,7 +216,7 @@ var MidiPlayer = (function () {
         return atob;
       }(function (string) {
         if (typeof atob === 'function') return atob(string);
-        return new Buffer(string, 'base64').toString('binary');
+        return Buffer.from(string, 'base64').toString('binary');
       })
     }]);
 
@@ -590,6 +590,7 @@ var MidiPlayer = (function () {
               // Pitch Bend
               eventJson.name = 'Pitch Bend';
               eventJson.channel = this.lastStatus - 0xe0 + 1;
+              eventJson.value = this.data[eventStartIndex + 2];
               this.pointer += deltaByteCount + 2;
             } else {
               throw "Unknown event (running): ".concat(this.lastStatus);
@@ -1231,12 +1232,7 @@ var MidiPlayer = (function () {
     }, {
       key: "getCurrentTick",
       value: function getCurrentTick() {
-        if (!this.startTime && this.tick) {
-          return this.startTick;
-        } else if (!this.startTime) {
-          return 0;
-        }
-
+        if (!this.startTime) return this.startTick;
         return Math.round((new Date().getTime() - this.startTime) / 1000 * (this.division * (this.tempo / 60))) + this.startTick;
       }
       /**
