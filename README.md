@@ -6,7 +6,7 @@ MidiPlayerJS is a JavaScript library which reads standard MIDI files and emits J
 
 ## Demos
 * [Neopixel Music](https://github.com/robertvorthman/neopixel-music) by robertvorthman @robertvorthman
-* [Autocomposer](http://www.rj-salvador.com/apps/autocomposer/) by RJ Salvador @rjsalvadorr
+* [Autocomposer](https://github.com/rjsalvadorr/autocomposer-js) by RJ Salvador @rjsalvadorr
 * [Simple Browser Player](http://grimmdude.com/MidiPlayerJS/) by Garrett Grimm @grimmdude
 * [Orchestra](https://lexcast.github.io/orchestra/) by Daniel Alejandro Cast @lexcast
 
