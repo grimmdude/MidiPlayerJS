@@ -14,7 +14,7 @@ MidiPlayerJS is a JavaScript library which reads standard MIDI files and emits J
 Using MidiWriterJS is pretty simple.  Create a new player by instantiating `MidiPlayer.Player` with an event handler to be called for every MIDI event.  Then you can load and play a MIDI file.
 
 ```js
-const MidiPlayer = require('midi-player-js');
+import MidiPlayer from 'midi-player-js';
 
 // Initialize player and register event handler
 const Player = new MidiPlayer.Player(function(event) {
