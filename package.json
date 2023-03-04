@@ -22,7 +22,7 @@
     "@rollup/plugin-replace": "^2.4.2",
     "jsdoc": "^3.6.7",
     "minami": "^1.1.1",
-    "mocha": "^5.2.0",
+    "mocha": "^10.2.0",
     "rollup": "^2.56.3",
     "sinon": "^7.1.1",
     "watch": "^1.0.2"
