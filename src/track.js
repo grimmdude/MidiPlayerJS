@@ -351,7 +351,7 @@ class Track	{
 					eventJson.channel = this.lastStatus - 0x80 + 1;
 					eventJson.noteNumber = this.data[eventStartIndex + 1];
 					eventJson.noteName = Constants.NOTES[this.data[eventStartIndex + 1]];
-					eventJson.velocity = Math.round(this.data[eventStartIndex + 2] / 127 * 100);
+					eventJson.velocity = this.data[eventStartIndex + 2];
 					this.pointer += deltaByteCount + 3;
 
 				} else if (this.data[eventStartIndex] <= 0x9f) {
@@ -360,7 +360,7 @@ class Track	{
 					eventJson.channel = this.lastStatus - 0x90 + 1;
 					eventJson.noteNumber = this.data[eventStartIndex + 1];
 					eventJson.noteName = Constants.NOTES[this.data[eventStartIndex + 1]];
-					eventJson.velocity = Math.round(this.data[eventStartIndex + 2] / 127 * 100);
+					eventJson.velocity = this.data[eventStartIndex + 2];
 					this.pointer += deltaByteCount + 3;
 
 				} else if (this.data[eventStartIndex] <= 0xaf) {
