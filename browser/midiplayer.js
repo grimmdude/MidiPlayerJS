@@ -4,17 +4,11 @@ var MidiPlayer = (function () {
   function _typeof(obj) {
     "@babel/helpers - typeof";
 
-    if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
-      _typeof = function (obj) {
-        return typeof obj;
-      };
-    } else {
-      _typeof = function (obj) {
-        return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
-      };
-    }
-
-    return _typeof(obj);
+    return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (obj) {
+      return typeof obj;
+    } : function (obj) {
+      return obj && "function" == typeof Symbol && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
+    }, _typeof(obj);
   }
 
   function _classCallCheck(instance, Constructor) {
@@ -36,6 +30,9 @@ var MidiPlayer = (function () {
   function _createClass(Constructor, protoProps, staticProps) {
     if (protoProps) _defineProperties(Constructor.prototype, protoProps);
     if (staticProps) _defineProperties(Constructor, staticProps);
+    Object.defineProperty(Constructor, "prototype", {
+      writable: false
+    });
     return Constructor;
   }
 
@@ -604,7 +601,7 @@ var MidiPlayer = (function () {
               eventJson.channel = this.lastStatus - 0x80 + 1;
               eventJson.noteNumber = this.data[eventStartIndex + 1];
               eventJson.noteName = Constants.NOTES[this.data[eventStartIndex + 1]];
-              eventJson.velocity = Math.round(this.data[eventStartIndex + 2] / 127 * 100);
+              eventJson.velocity = this.data[eventStartIndex + 2];
               this.pointer += deltaByteCount + 3;
             } else if (this.data[eventStartIndex] <= 0x9f) {
               // Note on
@@ -612,7 +609,7 @@ var MidiPlayer = (function () {
               eventJson.channel = this.lastStatus - 0x90 + 1;
               eventJson.noteNumber = this.data[eventStartIndex + 1];
               eventJson.noteName = Constants.NOTES[this.data[eventStartIndex + 1]];
-              eventJson.velocity = Math.round(this.data[eventStartIndex + 2] / 127 * 100);
+              eventJson.velocity = this.data[eventStartIndex + 2];
               this.pointer += deltaByteCount + 3;
             } else if (this.data[eventStartIndex] <= 0xaf) {
               // Polyphonic Key Pressure
@@ -1289,4 +1286,4 @@ var MidiPlayer = (function () {
 
   return index;
 
-}());
+})();
