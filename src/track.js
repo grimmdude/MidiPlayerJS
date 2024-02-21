@@ -335,7 +335,7 @@ class Track	{
 					// Pitch Bend
 					eventJson.name = 'Pitch Bend';
 					eventJson.channel = this.lastStatus - 0xe0 + 1;
-					eventJson.value = this.data[eventStartIndex + 2] << 7  | this.data[eventStartIndex + 1];
+					eventJson.value = this.data[eventStartIndex + 2] << 7 | this.data[eventStartIndex + 1];
 					eventJson.normalizedValue = (eventJson.value - 8192) / 8192;
 					this.pointer += deltaByteCount + 2;
 
@@ -397,7 +397,7 @@ class Track	{
 					// Pitch Bend
 					eventJson.name = 'Pitch Bend';
 					eventJson.channel = this.lastStatus - 0xe0 + 1;
-					eventJson.value = this.data[eventStartIndex + 2] << 7  | this.data[eventStartIndex + 1];
+					eventJson.value = this.data[eventStartIndex + 2] << 7 | this.data[eventStartIndex + 1];
 					eventJson.normalizedValue = (eventJson.value - 8192) / 8192;
 					this.pointer += deltaByteCount + 3;
 
