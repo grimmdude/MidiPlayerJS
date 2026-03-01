@@ -1,16 +1,6 @@
 var MidiPlayer = (function () {
   'use strict';
 
-  function _typeof(obj) {
-    "@babel/helpers - typeof";
-
-    return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (obj) {
-      return typeof obj;
-    } : function (obj) {
-      return obj && "function" == typeof Symbol && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
-    }, _typeof(obj);
-  }
-
   function _classCallCheck(instance, Constructor) {
     if (!(instance instanceof Constructor)) {
       throw new TypeError("Cannot call a class as a function");
@@ -701,7 +691,8 @@ var MidiPlayer = (function () {
       this.midiChunksByteLength = null;
       this.division;
       this.format;
-      this.setIntervalId = false;
+      this.setTimeoutId = false;
+      this.scheduledTime = 0;
       this.tracks = [];
       this.instruments = [];
       this.defaultTempo = 120;
@@ -967,23 +958,34 @@ var MidiPlayer = (function () {
       value: function play() {
         if (this.isPlaying()) throw 'Already playing...'; // Initialize
 
-        if (!this.startTime) this.startTime = new Date().getTime(); // Start play loop
-        //window.requestAnimationFrame(this.playLoop.bind(this));
+        if (!this.startTime) this.startTime = new Date().getTime(); // Start play loop using drift-correcting setTimeout
 
-        this.setIntervalId = setInterval(this.playLoop.bind(this), this.sampleRate); //this.setIntervalId = this.loop();
-
+        this.scheduledTime = Date.now();
+        this.schedulePlayLoop(this.sampleRate);
         return this;
       }
-    }, {
-      key: "loop",
-      value: function loop() {
-        setTimeout(function () {
-          // Do Something Here
-          this.playLoop(); // Then recall the parent function to
-          // create a recursive loop.
+      /**
+       * Schedules the next play loop iteration, correcting for timer drift.
+       * @param {number} delay - Delay in milliseconds before next iteration.
+       * @return {undefined}
+       */
 
-          this.loop();
-        }.bind(this), this.sampleRate);
+    }, {
+      key: "schedulePlayLoop",
+      value: function schedulePlayLoop(delay) {
+        var _this = this;
+
+        this.setTimeoutId = setTimeout(function () {
+          _this.playLoop();
+
+          if (_this.setTimeoutId !== false) {
+            _this.scheduledTime += _this.sampleRate;
+
+            var drift = Date.now() - _this.scheduledTime;
+
+            _this.schedulePlayLoop(Math.max(0, _this.sampleRate - drift));
+          }
+        }, delay);
       }
       /**
        * Pauses playback if playing.
@@ -993,8 +995,9 @@ var MidiPlayer = (function () {
     }, {
       key: "pause",
       value: function pause() {
-        clearInterval(this.setIntervalId);
-        this.setIntervalId = false;
+        clearTimeout(this.setTimeoutId);
+        this.setTimeoutId = false;
+        this.scheduledTime = 0;
         this.startTick = this.tick;
         this.startTime = 0;
         return this;
@@ -1007,8 +1010,9 @@ var MidiPlayer = (function () {
     }, {
       key: "stop",
       value: function stop() {
-        clearInterval(this.setIntervalId);
-        this.setIntervalId = false;
+        clearTimeout(this.setTimeoutId);
+        this.setTimeoutId = false;
+        this.scheduledTime = 0;
         this.startTick = 0;
         this.startTime = 0;
         this.resetTracks();
@@ -1111,7 +1115,7 @@ var MidiPlayer = (function () {
     }, {
       key: "isPlaying",
       value: function isPlaying() {
-        return this.setIntervalId > 0 || _typeof(this.setIntervalId) === 'object';
+        return this.setTimeoutId !== false;
       }
       /**
        * Plays the loaded MIDI file without regard for timing and saves events in this.events.  Essentially used as a parser.
