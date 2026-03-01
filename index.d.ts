@@ -355,6 +355,27 @@ declare module "midi-player-js" {
             tempo: number;
 
             /**
+             * Tempo map built from Set Tempo events.
+             * Each entry has a tick position and the tempo (BPM) at that tick.
+             */
+            tempoMap: Array<{tick: number, tempo: number}>;
+
+            /**
+             * Converts a tick range to seconds using the tempo map.
+             * @param startTick - Start tick position
+             * @param endTick - End tick position
+             * @return Duration in seconds
+             */
+            ticksToSeconds(startTick: number, endTick: number): number;
+
+            /**
+             * Converts seconds to a tick position using the tempo map.
+             * @param seconds - Time in seconds
+             * @return Tick position
+             */
+            secondsToTicks(seconds: number): number;
+
+            /**
              * Ticks per quarter note.
              * @type {number}
              */

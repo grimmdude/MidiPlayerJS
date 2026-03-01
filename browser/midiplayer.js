@@ -4,17 +4,11 @@ var MidiPlayer = (function () {
   function _typeof(obj) {
     "@babel/helpers - typeof";
 
-    if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
-      _typeof = function (obj) {
-        return typeof obj;
-      };
-    } else {
-      _typeof = function (obj) {
-        return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
-      };
-    }
-
-    return _typeof(obj);
+    return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (obj) {
+      return typeof obj;
+    } : function (obj) {
+      return obj && "function" == typeof Symbol && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
+    }, _typeof(obj);
   }
 
   function _classCallCheck(instance, Constructor) {
@@ -36,6 +30,9 @@ var MidiPlayer = (function () {
   function _createClass(Constructor, protoProps, staticProps) {
     if (protoProps) _defineProperties(Constructor.prototype, protoProps);
     if (staticProps) _defineProperties(Constructor, staticProps);
+    Object.defineProperty(Constructor, "prototype", {
+      writable: false
+    });
     return Constructor;
   }
 
@@ -708,6 +705,7 @@ var MidiPlayer = (function () {
       this.totalTicks = 0;
       this.events = [];
       this.totalEvents = 0;
+      this.tempoMap = [];
       this.eventListeners = {};
       if (typeof eventHandler === 'function') this.on('midiEvent', eventHandler);
     }
@@ -1018,7 +1016,15 @@ var MidiPlayer = (function () {
       key: "skipToTick",
       value: function skipToTick(tick) {
         this.stop();
-        this.startTick = tick; // Need to set track event indexes to the nearest possible event to the specified tick.
+        this.startTick = tick; // Set tempo to the value that applies at the target tick
+
+        for (var i = this.tempoMap.length - 1; i >= 0; i--) {
+          if (this.tempoMap[i].tick <= tick) {
+            this.setTempo(this.tempoMap[i].tempo);
+            break;
+          }
+        } // Need to set track event indexes to the nearest possible event to the specified tick.
+
 
         this.tracks.forEach(function (track) {
           track.setEventIndexByTick(tick);
@@ -1049,7 +1055,7 @@ var MidiPlayer = (function () {
       value: function skipToSeconds(seconds) {
         var songTime = this.getSongTime();
         if (seconds < 0 || seconds > songTime) throw seconds + " seconds not within song time of " + songTime;
-        this.skipToPercent(seconds / songTime * 100);
+        this.skipToTick(this.secondsToTicks(seconds));
         return this;
       }
       /**
@@ -1080,6 +1086,7 @@ var MidiPlayer = (function () {
         this.events = this.getEvents();
         this.totalEvents = this.getTotalEvents();
         this.totalTicks = this.getTotalTicks();
+        this.buildTempoMap();
         this.startTick = 0;
         this.startTime = 0; // Leave tracks in pristine condish
 
@@ -1146,6 +1153,116 @@ var MidiPlayer = (function () {
         }).events.length;
       }
       /**
+       * Builds a tempo map from all Set Tempo events across all tracks.
+       * @return {Player}
+       */
+
+    }, {
+      key: "buildTempoMap",
+      value: function buildTempoMap() {
+        // Collect all Set Tempo events from all tracks
+        var tempoEvents = [];
+        this.events.forEach(function (trackEvents) {
+          trackEvents.forEach(function (event) {
+            if (event.name === 'Set Tempo') {
+              tempoEvents.push({
+                tick: event.tick,
+                tempo: event.data
+              });
+            }
+          });
+        }); // Sort by tick
+
+        tempoEvents.sort(function (a, b) {
+          return a.tick - b.tick;
+        }); // Build map starting with default tempo
+
+        this.tempoMap = [{
+          tick: 0,
+          tempo: this.defaultTempo
+        }];
+        tempoEvents.forEach(function (event) {
+          var last = this.tempoMap[this.tempoMap.length - 1];
+
+          if (event.tick === last.tick) {
+            // Same tick: update existing entry
+            last.tempo = event.tempo;
+          } else {
+            this.tempoMap.push({
+              tick: event.tick,
+              tempo: event.tempo
+            });
+          }
+        }, this);
+        return this;
+      }
+      /**
+       * Converts a tick range to seconds using the tempo map.
+       * @param {number} startTick
+       * @param {number} endTick
+       * @return {number}
+       */
+
+    }, {
+      key: "ticksToSeconds",
+      value: function ticksToSeconds(startTick, endTick) {
+        var seconds = 0;
+        var currentTick = startTick;
+
+        for (var i = 0; i < this.tempoMap.length; i++) {
+          var entry = this.tempoMap[i];
+          var nextTick = i + 1 < this.tempoMap.length ? this.tempoMap[i + 1].tick : endTick; // Skip entries entirely before our start
+
+          if (nextTick <= startTick) continue; // Clamp segment to our range
+
+          var segStart = Math.max(entry.tick, startTick);
+          var segEnd = Math.min(nextTick, endTick);
+          if (segStart >= endTick) break;
+          var segmentTicks = segEnd - segStart;
+          seconds += segmentTicks / this.division / entry.tempo * 60;
+          currentTick = segEnd;
+        } // Handle remaining ticks after last tempo change
+
+
+        if (currentTick < endTick) {
+          var lastEntry = this.tempoMap[this.tempoMap.length - 1];
+          seconds += (endTick - currentTick) / this.division / lastEntry.tempo * 60;
+        }
+
+        return seconds;
+      }
+      /**
+       * Converts seconds to a tick position using the tempo map.
+       * @param {number} seconds
+       * @return {number}
+       */
+
+    }, {
+      key: "secondsToTicks",
+      value: function secondsToTicks(seconds) {
+        var remainingSeconds = seconds;
+        var currentTick = 0;
+
+        for (var i = 0; i < this.tempoMap.length; i++) {
+          var entry = this.tempoMap[i];
+          var nextTick = i + 1 < this.tempoMap.length ? this.tempoMap[i + 1].tick : Infinity;
+          var segmentTicks = nextTick - entry.tick;
+          var segmentSeconds = segmentTicks / this.division / entry.tempo * 60;
+
+          if (remainingSeconds <= segmentSeconds) {
+            // Target is within this segment
+            currentTick = entry.tick + Math.round(remainingSeconds / 60 * entry.tempo * this.division);
+            return currentTick;
+          }
+
+          remainingSeconds -= segmentSeconds;
+          currentTick = nextTick;
+        } // Should not reach here, but return totalTicks as fallback
+
+
+        return this.totalTicks;
+      }
+      /**
        * Gets song duration in seconds.
        * @return {number}
        */
@@ -1153,7 +1270,7 @@ var MidiPlayer = (function () {
     }, {
       key: "getSongTime",
       value: function getSongTime() {
-        return this.totalTicks / this.division / this.tempo * 60;
+        return this.ticksToSeconds(0, this.totalTicks);
       }
       /**
        * Gets remaining number of seconds in playback.
@@ -1163,7 +1280,7 @@ var MidiPlayer = (function () {
     }, {
       key: "getSongTimeRemaining",
       value: function getSongTimeRemaining() {
-        return Math.round((this.totalTicks - this.getCurrentTick()) / this.division / this.tempo * 60);
+        return Math.round(this.ticksToSeconds(this.getCurrentTick(), this.totalTicks));
       }
       /**
        * Gets remaining percent of playback.
@@ -1289,4 +1406,4 @@ var MidiPlayer = (function () {
 
   return index;
 
-}());
+})();
