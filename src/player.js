@@ -205,30 +205,35 @@ class Player {
 					this.triggerPlayerEvent('endOfFile');
 					this.stop();
 				} else {
-					let event = track.handleEvent(this.tick, dryRun);
+					let result = track.handleEvent(this.tick, dryRun);
 
-					if (dryRun && event) {
-						if (event.hasOwnProperty('name') && event.name === 'Set Tempo') {
+					if (dryRun && result) {
+						if (result.hasOwnProperty('name') && result.name === 'Set Tempo') {
 							// Grab tempo if available.
-							this.setTempo(event.data);
+							this.setTempo(result.data);
 						}
-						if (event.hasOwnProperty('name') && event.name === 'Program Change') {
-							if (!this.instruments.includes(event.value)) {
-								this.instruments.push(event.value);
+						if (result.hasOwnProperty('name') && result.name === 'Program Change') {
+							if (!this.instruments.includes(result.value)) {
+								this.instruments.push(result.value);
 							}
 						}
 
-					} else if (event) {
-						if (event.hasOwnProperty('name') && event.name === 'Set Tempo') {
-							// Grab tempo if available.
-							this.setTempo(event.data);
+					} else if (result) {
+						// result is an array of events during playback
+						let events = Array.isArray(result) ? result : [result];
 
-							if (this.isPlaying()) {
-								this.pause().play();
+						events.forEach(function(event) {
+							if (event.hasOwnProperty('name') && event.name === 'Set Tempo') {
+								// Grab tempo if available.
+								this.setTempo(event.data);
+
+								if (this.isPlaying()) {
+									this.pause().play();
+								}
 							}
-						}
 
-						this.emitEvent(event);
+							this.emitEvent(event);
+						}, this);
 					}
 				}
 
