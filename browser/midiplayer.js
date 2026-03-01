@@ -355,10 +355,15 @@ var MidiPlayer = (function () {
           }
         } else {
           // Let's actually play the MIDI from the generated JSON events created by the dry run.
-          if (this.events[this.eventIndex] && this.events[this.eventIndex].tick <= currentTick) {
+          // Process all events that have passed to avoid falling behind on dense MIDI files.
+          var events = [];
+
+          while (this.events[this.eventIndex] && this.events[this.eventIndex].tick <= currentTick) {
+            if (this.enabled) events.push(this.events[this.eventIndex]);
             this.eventIndex++;
-            if (this.enabled) return this.events[this.eventIndex - 1];
           }
+
+          if (events.length > 0) return events;
         }
 
         return null;
@@ -896,30 +901,34 @@ var MidiPlayer = (function () {
               this.triggerPlayerEvent('endOfFile');
               this.stop();
             } else {
-              var event = track.handleEvent(this.tick, dryRun);
+              var result = track.handleEvent(this.tick, dryRun);
 
-              if (dryRun && event) {
-                if (event.hasOwnProperty('name') && event.name === 'Set Tempo') {
+              if (dryRun && result) {
+                if (result.hasOwnProperty('name') && result.name === 'Set Tempo') {
                   // Grab tempo if available.
-                  this.setTempo(event.data);
+                  this.setTempo(result.data);
                 }
 
-                if (event.hasOwnProperty('name') && event.name === 'Program Change') {
-                  if (!this.instruments.includes(event.value)) {
-                    this.instruments.push(event.value);
+                if (result.hasOwnProperty('name') && result.name === 'Program Change') {
+                  if (!this.instruments.includes(result.value)) {
+                    this.instruments.push(result.value);
                   }
                 }
-              } else if (event) {
-                if (event.hasOwnProperty('name') && event.name === 'Set Tempo') {
-                  // Grab tempo if available.
-                  this.setTempo(event.data);
+              } else if (result) {
+                // result is an array of events during playback
+                var events = Array.isArray(result) ? result : [result];
+                events.forEach(function (event) {
+                  if (event.hasOwnProperty('name') && event.name === 'Set Tempo') {
+                    // Grab tempo if available.
+                    this.setTempo(event.data);
 
-                  if (this.isPlaying()) {
-                    this.pause().play();
+                    if (this.isPlaying()) {
+                      this.pause().play();
+                    }
                   }
-                }
 
-                this.emitEvent(event);
+                  this.emitEvent(event);
+                }, this);
               }
             }
           }, this);

@@ -118,10 +118,13 @@ class Track	{
 
 		} else {
 			// Let's actually play the MIDI from the generated JSON events created by the dry run.
-			if (this.events[this.eventIndex] && this.events[this.eventIndex].tick <= currentTick) {
+			// Process all events that have passed to avoid falling behind on dense MIDI files.
+			var events = [];
+			while (this.events[this.eventIndex] && this.events[this.eventIndex].tick <= currentTick) {
+				if (this.enabled) events.push(this.events[this.eventIndex]);
 				this.eventIndex++;
-				if (this.enabled) return this.events[this.eventIndex - 1];
 			}
+			if (events.length > 0) return events;
 		}
 
 		return null;
