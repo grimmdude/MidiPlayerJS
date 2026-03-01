@@ -4,17 +4,11 @@ var MidiPlayer = (function () {
   function _typeof(obj) {
     "@babel/helpers - typeof";
 
-    if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
-      _typeof = function (obj) {
-        return typeof obj;
-      };
-    } else {
-      _typeof = function (obj) {
-        return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
-      };
-    }
-
-    return _typeof(obj);
+    return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (obj) {
+      return typeof obj;
+    } : function (obj) {
+      return obj && "function" == typeof Symbol && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
+    }, _typeof(obj);
   }
 
   function _classCallCheck(instance, Constructor) {
@@ -36,6 +30,9 @@ var MidiPlayer = (function () {
   function _createClass(Constructor, protoProps, staticProps) {
     if (protoProps) _defineProperties(Constructor.prototype, protoProps);
     if (staticProps) _defineProperties(Constructor, staticProps);
+    Object.defineProperty(Constructor, "prototype", {
+      writable: false
+    });
     return Constructor;
   }
 
@@ -299,7 +296,7 @@ var MidiPlayer = (function () {
       value: function setEventIndexByTick(tick) {
         tick = tick || 0;
 
-        for (var i in this.events) {
+        for (var i = 0; i < this.events.length; i++) {
           if (this.events[i].tick >= tick) {
             this.eventIndex = i;
             return this;
@@ -353,9 +350,8 @@ var MidiPlayer = (function () {
           var eventReady = elapsedTicks >= delta;
 
           if (this.pointer < this.data.length && (dryRun || eventReady)) {
-            var _event = this.parseEvent();
-
-            if (this.enabled) return _event; // Recursively call this function for each event ahead that has 0 delta time?
+            var event = this.parseEvent();
+            if (this.enabled) return event; // Recursively call this function for each event ahead that has 0 delta time?
           }
         } else {
           // Let's actually play the MIDI from the generated JSON events created by the dry run.
@@ -442,6 +438,7 @@ var MidiPlayer = (function () {
             case 0x06:
               // Marker
               eventJson.name = 'Marker';
+              eventJson.string = this.getStringData(eventStartIndex);
               break;
 
             case 0x07:
@@ -496,12 +493,14 @@ var MidiPlayer = (function () {
               // Key Signature
               // FF 59 02 sf mi
               eventJson.name = 'Key Signature';
-              eventJson.data = this.data.subarray(eventStartIndex + 3, eventStartIndex + 5);
+              eventJson.data = this.data.subarray(eventStartIndex + 3, eventStartIndex + 5); // sf byte is signed (-7 to 7), but Uint8Array gives unsigned values
 
-              if (eventJson.data[0] >= 0) {
-                eventJson.keySignature = Constants.CIRCLE_OF_FIFTHS[eventJson.data[0]];
-              } else if (eventJson.data[0] < 0) {
-                eventJson.keySignature = Constants.CIRCLE_OF_FOURTHS[Math.abs(eventJson.data[0])];
+              var sf = eventJson.data[0] > 127 ? eventJson.data[0] - 256 : eventJson.data[0];
+
+              if (sf >= 0) {
+                eventJson.keySignature = Constants.CIRCLE_OF_FIFTHS[sf];
+              } else {
+                eventJson.keySignature = Constants.CIRCLE_OF_FOURTHS[Math.abs(sf)];
               }
 
               if (eventJson.data[1] == 0) {
@@ -525,7 +524,7 @@ var MidiPlayer = (function () {
           var varIntLength = Utils.getVarIntLength(this.data.subarray(eventStartIndex + 2));
           var length = Utils.readVarInt(this.data.subarray(eventStartIndex + 2, eventStartIndex + 2 + varIntLength)); //console.log(eventJson);
 
-          this.pointer += deltaByteCount + 3 + length; //console.log(eventJson);
+          this.pointer += deltaByteCount + 2 + varIntLength + length; //console.log(eventJson);
         } else if (this.data[eventStartIndex] === 0xf0) {
           // Sysex
           eventJson.name = 'Sysex';
@@ -565,15 +564,15 @@ var MidiPlayer = (function () {
               // Polyphonic Key Pressure
               eventJson.name = 'Polyphonic Key Pressure';
               eventJson.channel = this.lastStatus - 0xa0 + 1;
-              eventJson.note = Constants.NOTES[this.data[eventStartIndex + 1]];
-              eventJson.pressure = event[1];
+              eventJson.note = Constants.NOTES[this.data[eventStartIndex]];
+              eventJson.pressure = this.data[eventStartIndex + 1];
               this.pointer += deltaByteCount + 2;
             } else if (this.lastStatus <= 0xbf) {
               // Controller Change
               eventJson.name = 'Controller Change';
               eventJson.channel = this.lastStatus - 0xb0 + 1;
-              eventJson.number = this.data[eventStartIndex + 1];
-              eventJson.value = this.data[eventStartIndex + 2];
+              eventJson.number = this.data[eventStartIndex];
+              eventJson.value = this.data[eventStartIndex + 1];
               this.pointer += deltaByteCount + 2;
             } else if (this.lastStatus <= 0xcf) {
               // Program Change
@@ -590,7 +589,7 @@ var MidiPlayer = (function () {
               // Pitch Bend
               eventJson.name = 'Pitch Bend';
               eventJson.channel = this.lastStatus - 0xe0 + 1;
-              eventJson.value = this.data[eventStartIndex + 2];
+              eventJson.value = (this.data[eventStartIndex + 1] & 0x7f) << 7 | this.data[eventStartIndex] & 0x7f;
               this.pointer += deltaByteCount + 2;
             } else {
               throw "Unknown event (running): ".concat(this.lastStatus);
@@ -619,7 +618,7 @@ var MidiPlayer = (function () {
               eventJson.name = 'Polyphonic Key Pressure';
               eventJson.channel = this.lastStatus - 0xa0 + 1;
               eventJson.note = Constants.NOTES[this.data[eventStartIndex + 1]];
-              eventJson.pressure = event[2];
+              eventJson.pressure = this.data[eventStartIndex + 2];
               this.pointer += deltaByteCount + 3;
             } else if (this.data[eventStartIndex] <= 0xbf) {
               // Controller Change
@@ -643,6 +642,7 @@ var MidiPlayer = (function () {
               // Pitch Bend
               eventJson.name = 'Pitch Bend';
               eventJson.channel = this.lastStatus - 0xe0 + 1;
+              eventJson.value = (this.data[eventStartIndex + 2] & 0x7f) << 7 | this.data[eventStartIndex + 1] & 0x7f;
               this.pointer += deltaByteCount + 3;
             } else {
               throw "Unknown event: ".concat(this.data[eventStartIndex]); //eventJson.name = `Unknown.  Pointer: ${this.pointer.toString()}, ${eventStartIndex.toString()}, ${this.data[eventStartIndex]}, ${this.data.length}`;
@@ -708,6 +708,7 @@ var MidiPlayer = (function () {
       this.totalTicks = 0;
       this.events = [];
       this.totalEvents = 0;
+      this.tempoMap = [];
       this.eventListeners = {};
       if (typeof eventHandler === 'function') this.on('midiEvent', eventHandler);
     }
@@ -779,6 +780,7 @@ var MidiPlayer = (function () {
       key: "fileLoaded",
       value: function fileLoaded() {
         if (!this.validate()) throw 'Invalid MIDI file; should start with MThd';
+        this.defaultTempo = 120;
         return this.setTempo(this.defaultTempo).getDivision().getFormat().getTracks().dryRun();
       }
       /**
@@ -899,7 +901,6 @@ var MidiPlayer = (function () {
               if (dryRun && event) {
                 if (event.hasOwnProperty('name') && event.name === 'Set Tempo') {
                   // Grab tempo if available.
-                  this.defaultTempo = event.data;
                   this.setTempo(event.data);
                 }
 
@@ -1018,7 +1019,15 @@ var MidiPlayer = (function () {
       key: "skipToTick",
       value: function skipToTick(tick) {
         this.stop();
-        this.startTick = tick; // Need to set track event indexes to the nearest possible event to the specified tick.
+        this.startTick = tick; // Set tempo to the value that applies at the target tick
+
+        for (var i = this.tempoMap.length - 1; i >= 0; i--) {
+          if (this.tempoMap[i].tick <= tick) {
+            this.setTempo(this.tempoMap[i].tempo);
+            break;
+          }
+        } // Need to set track event indexes to the nearest possible event to the specified tick.
+
 
         this.tracks.forEach(function (track) {
           track.setEventIndexByTick(tick);
@@ -1049,7 +1058,7 @@ var MidiPlayer = (function () {
       value: function skipToSeconds(seconds) {
         var songTime = this.getSongTime();
         if (seconds < 0 || seconds > songTime) throw seconds + " seconds not within song time of " + songTime;
-        this.skipToPercent(seconds / songTime * 100);
+        this.skipToTick(this.secondsToTicks(seconds));
         return this;
       }
       /**
@@ -1080,6 +1089,7 @@ var MidiPlayer = (function () {
         this.events = this.getEvents();
         this.totalEvents = this.getTotalEvents();
         this.totalTicks = this.getTotalTicks();
+        this.buildTempoMap();
         this.startTick = 0;
         this.startTime = 0; // Leave tracks in pristine condish
 
@@ -1146,6 +1156,116 @@ var MidiPlayer = (function () {
         }).events.length;
       }
       /**
+       * Builds a tempo map from all Set Tempo events across all tracks.
+       * @return {Player}
+       */
+
+    }, {
+      key: "buildTempoMap",
+      value: function buildTempoMap() {
+        // Collect all Set Tempo events from all tracks
+        var tempoEvents = [];
+        this.events.forEach(function (trackEvents) {
+          trackEvents.forEach(function (event) {
+            if (event.name === 'Set Tempo') {
+              tempoEvents.push({
+                tick: event.tick,
+                tempo: event.data
+              });
+            }
+          });
+        }); // Sort by tick
+
+        tempoEvents.sort(function (a, b) {
+          return a.tick - b.tick;
+        }); // Build map starting with default tempo
+
+        this.tempoMap = [{
+          tick: 0,
+          tempo: this.defaultTempo
+        }];
+        tempoEvents.forEach(function (event) {
+          var last = this.tempoMap[this.tempoMap.length - 1];
+
+          if (event.tick === last.tick) {
+            // Same tick: update existing entry
+            last.tempo = event.tempo;
+          } else {
+            this.tempoMap.push({
+              tick: event.tick,
+              tempo: event.tempo
+            });
+          }
+        }, this);
+        return this;
+      }
+      /**
+       * Converts a tick range to seconds using the tempo map.
+       * @param {number} startTick
+       * @param {number} endTick
+       * @return {number}
+       */
+
+    }, {
+      key: "ticksToSeconds",
+      value: function ticksToSeconds(startTick, endTick) {
+        var seconds = 0;
+        var currentTick = startTick;
+
+        for (var i = 0; i < this.tempoMap.length; i++) {
+          var entry = this.tempoMap[i];
+          var nextTick = i + 1 < this.tempoMap.length ? this.tempoMap[i + 1].tick : endTick; // Skip entries entirely before our start
+
+          if (nextTick <= startTick) continue; // Clamp segment to our range
+
+          var segStart = Math.max(entry.tick, startTick);
+          var segEnd = Math.min(nextTick, endTick);
+          if (segStart >= endTick) break;
+          var segmentTicks = segEnd - segStart;
+          seconds += segmentTicks / this.division / entry.tempo * 60;
+          currentTick = segEnd;
+        } // Handle remaining ticks after last tempo change
+
+
+        if (currentTick < endTick) {
+          var lastEntry = this.tempoMap[this.tempoMap.length - 1];
+          seconds += (endTick - currentTick) / this.division / lastEntry.tempo * 60;
+        }
+
+        return seconds;
+      }
+      /**
+       * Converts seconds to a tick position using the tempo map.
+       * @param {number} seconds
+       * @return {number}
+       */
+
+    }, {
+      key: "secondsToTicks",
+      value: function secondsToTicks(seconds) {
+        var remainingSeconds = seconds;
+        var currentTick = 0;
+
+        for (var i = 0; i < this.tempoMap.length; i++) {
+          var entry = this.tempoMap[i];
+          var nextTick = i + 1 < this.tempoMap.length ? this.tempoMap[i + 1].tick : Infinity;
+          var segmentTicks = nextTick - entry.tick;
+          var segmentSeconds = segmentTicks / this.division / entry.tempo * 60;
+
+          if (remainingSeconds <= segmentSeconds) {
+            // Target is within this segment
+            currentTick = entry.tick + Math.round(remainingSeconds / 60 * entry.tempo * this.division);
+            return currentTick;
+          }
+
+          remainingSeconds -= segmentSeconds;
+          currentTick = nextTick;
+        } // Should not reach here, but return totalTicks as fallback
+
+
+        return this.totalTicks;
+      }
+      /**
        * Gets song duration in seconds.
        * @return {number}
        */
@@ -1153,7 +1273,7 @@ var MidiPlayer = (function () {
     }, {
       key: "getSongTime",
       value: function getSongTime() {
-        return this.totalTicks / this.division / this.tempo * 60;
+        return this.ticksToSeconds(0, this.totalTicks);
       }
       /**
        * Gets remaining number of seconds in playback.
@@ -1163,7 +1283,7 @@ var MidiPlayer = (function () {
     }, {
       key: "getSongTimeRemaining",
       value: function getSongTimeRemaining() {
-        return Math.round((this.totalTicks - this.getCurrentTick()) / this.division / this.tempo * 60);
+        return Math.round(this.ticksToSeconds(this.getCurrentTick(), this.totalTicks));
       }
       /**
        * Gets remaining percent of playback.
@@ -1289,4 +1409,4 @@ var MidiPlayer = (function () {
 
   return index;
 
-}());
+})();

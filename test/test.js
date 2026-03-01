@@ -4,6 +4,25 @@ var sinon = require('sinon');
 var MidiPlayer = require('..');
 var zelda = 'data:audio/midi;base64,TVRoZAAAAAYAAQACAIBNVHJrAAADoQDAAQCQRn+CAIBGfwCQRn9AgEZ/AJBBf0CAQX8AkEF/QIBBfwCQRn9AgEZ/AJBEfyCARH8AkEJ/IIBCfwCQRH+DAIBEf0CQRn+CAIBGfwCQRn9AgEZ/AJBBf0CAQX8AkEF/QIBBfwCQRn9AgEZ/AJBFfyCARX8AkEN/IIBDfwCQRX+BQIBFf4IAkEUBhACARQGEAJBGf4EAgEZ/AJBBf4FAgEF/AJBGf0CARn8AkEZ/IIBGfwCQSH8ggEh/AJBKfyCASn8AkEt/IIBLfwCQTX+CAIBNf0CQTX9AgE1/AJBNf0CATX8AkE5/IIBOfwCQUH8ggFB/AJBSf4IAgFJ/QJBSf0CAUn8AkFJ/QIBSfwCQUH8ggFB/AJBOfyCATn8AkFB/YIBQfwCQTn8ggE5/AJBNf4IAgE1/AJBNf4EAgE1/AJBLf2CAS38AkE1/IIBNfwCQTn+CAIBOfwCQTX9AgE1/AJBLf0CAS38AkEl/YIBJfwCQS38ggEt/AJBNf4IAgE1/AJBLf0CAS38AkEl/QIBJfwCQSH9ggEh/AJBKfyCASn8AkEx/ggCATH8AkE9/gQCAT38AkE1/QIBNfwCQQX8ggEF/AJBBfyCAQX8AkEF/QIBBfwCQQX8ggEF/AJBBfyCAQX8AkEF/QIBBfwCQQX8ggEF/AJBBfyCAQX8AkEF/QIBBfwCQQX9AgEF/AJBGf4EAgEZ/AJBBf4FAgEF/AJBGf0CARn8AkEZ/IIBGfwCQSH8ggEh/AJBKfyCASn8AkEt/IIBLfwCQTX+CAIBNf0CQTX9AgE1/AJBNf0CATX8AkE5/IIBOfwCQUH8ggFB/AJBSf4MAgFJ/AJBVf4EAgFV/AJBUf4EAgFR/AJBRf4IAgFF/AJBNf4EAgE1/AJBOf4MAgE5/AJBSf4EAgFJ/AJBRf4EAgFF/AJBNf4IAgE1/AJBNf4EAgE1/AJBOf4MAgE5/AJBSf4EAgFJ/AJBRf4EAgFF/AJBNf4IAgE1/AJBKf4EAgEp/AJBLf4MAgEt/AJBOf4EAgE5/AJBNf4EAgE1/AJBJf4IAgEl/AJBGf4EAgEZ/AJBIf2CASH8AkEp/IIBKfwCQTH+CAIBMfwCQT3+BAIBPfwCQTX9AgE1/AJBBfyCAQX8AkEF/IIBBfwCQQX9AgEF/AJBBfyCAQX8AkEF/IIBBfwCQQX9AgEF/AJBBfyCAQX8AkEF/IIBBfwCQQX9AgEF/AJBBf0CAQX8A/y8ATVRyawAACUMAwAEAkCpAgQCAKkAAkDVAgQCANUAAkDpAggCAOkAAkClAgQCAKUAAkDNAgQCAM0AAkDhAggCAOEAAkCdAgQCAJ0AAkDFAgQCAMUAAkDpAggCAOkAAkCpAgQCAKkAAkDVAgQCANUAAkDpAggCAOkAAkC5AQIAuQACQLkAggC5AAJApQCCAKUAAkC5AQIAuQACQLkAggC5AAJApQCCAKUAAkC5AQIAuQACQLkAggC5AAJApQCCAKUAAkC5AIIAuQACQKUAggClAAJAuQCCALkAAkClAIIApQACQLkBAgC5AAJAuQCCALkAAkClAIIApQACQLkBAgC5AAJAuQCCALkAAkClAIIApQACQLkBAgC5AAJAuQCCALkAAkClAIIApQACQLkAggC5AAJApQCCAKUAAkC5AIIAuQACQKUAggClAAJAuQECALkAAkC5AIIAuQACQKUAggClAAJAuQECALkAAkC5AIIAuQACQKUAggClAAJAuQECALkAAkC5AIIAuQACQKUAggClAAJAuQCCALkAAkClAIIApQACQLkAggC5AAJApQCCAKUAAkCxAQIAsQACQLEAggCxAAJAnQCCAJ0AAkCxAQIAsQACQLEAggCxAAJAnQCCAJ0AAkCxAQIAsQACQLEAggCxAAJAnQCCAJ0AAkCxAIIAsQACQJ0AggCdAAJAsQCCALEAAkCdAIIAnQACQKkBAgCpAAJAqQCCAKkAAkCVAIIAlQACQKkBAgCpAAJAqQCCAKkAAkCVAIIAlQACQKkBAgCpAAJAqQCCAKkAAkCVAIIAlQACQKkAggCpAAJAlQCCAJUAAkCpAIIAqQACQJUAggCVAAJAxQECAMUAAkDFAIIAxQACQLEAggCxAAJAxQECAMUAAkDFAIIAxQACQLEAggCxAAJAxQECAMUAAkDFAIIAxQACQLEAggCxAAJAxQCCAMUAAkCxAIIAsQACQMUAggDFAAJAsQCCALEAAkC9AQIAvQACQL0AggC9AAJAqQCCAKkAAkC9AQIAvQACQL0AggC9AAJAqQCCAKkAAkC9AQIAvQACQL0AggC9AAJAqQCCAKkAAkC9AIIAvQACQKkAggCpAAJAvQCCAL0AAkCpAIIAqQACQLkBAgC5AAJAuQCCALkAAkClAIIApQACQLkBAgC5AAJAuQCCALkAAkClAIIApQACQLkBAgC5AAJAuQCCALkAAkClAIIApQACQLkAggC5AAJApQCCAKUAAkC5AIIAuQACQKUAggClAAJAwQECAMEAAkDBAIIAwQACQK0AggCtAAJAwQECAMEAAkDBAIIAwQACQK0AggCtAAJAwQECAMEAAkDBAIIAwQACQK0AggCtAAJAwQCCAMEAAkCtAIIArQACQMEAggDBAAJArQCCAK0AAkClAQIApQACQOUAggDlAAJA5QCCAOUAAkDhAQIA4QACQOEAggDhAAJA4QCCAOEAAkDdAQIA3QACQN0AggDdAAJA3QCCAN0AAkDZAQIA2QACQKUBAgClAAJAuQECALkAAkC5AIIAuQACQKUAggClAAJAuQECALkAAkC5AIIAuQACQKUAggClAAJAuQECALkAAkC5AIIAuQACQKUAggClAAJAuQCCALkAAkClAIIApQACQLkAggC5AAJApQCCAKUAAkCxAQIAsQACQLEAggCxAAJAnQCCAJ0AAkCxAQIAsQACQLEAggCxAAJAnQCCAJ0AAkCxAQIAsQACQLEAggCxAAJAnQCCAJ0AAkCxAIIAsQACQJ0AggCdAAJAsQCCALEAAkCdAIIAnQACQKkBAgCpAAJAqQCCAKkAAkCpAIIAqQACQKkBAgCpAAJAqQCCAKkAAkCpAIIAqQACQKkBAgCpAAJAqQCCAKkAAkCpAIIAqQACQKkAggCpAAJAqQCCAKkAAkCpAIIAqQACQKkAggCpAAJApQECAKUAAkClAIIApQACQKUAggClAAJApQECAKUAAkClAIIApQACQKUAggClAAJApQECAKUAAkClAIIApQACQKUAggClAAJApQCCAKUAAkClAIIApQACQKUAggClAAJApQCCAKUAAkChAQIAoQACQKEAggChAAJAoQCCAKEAAkChAQIAoQACQKEAggChAAJAoQCCAKEAAkChAQIAoQACQKEAggChAAJAoQCCAKEAAkChAIIAoQACQKEAggChAAJAoQCCAKEAAkChAIIAoQACQKUBAgClAAJApQCCAKUAAkClAIIApQACQKUBAgClAAJApQCCAKUAAkClAIIApQACQKUBAgClAAJApQCCAKUAAkClAIIApQACQKUAggClAAJApQCCAKUAAkClAIIApQACQKUAggClAAJAoQECAKEAAkChAIIAoQACQKEAggChAAJAoQECAKEAAkChAIIAoQACQKEAggChAAJAoQECAKEAAkChAIIAoQACQKEAggChAAJAoQCCAKEAAkChAIIAoQACQKEAggChAAJAoQCCAKEAAkClAQIApQACQKUAggClAAJApQCCAKUAAkClAQIApQACQKUAggClAAJApQCCAKUAAkClAQIApQACQKUAggClAAJApQCCAKUAAkClAIIApQACQKUAggClAAJApQCCAKUAAkClAIIApQACQL0BAgC9AAJAvQCCAL0AAkC9AIIAvQACQL0BAgC9AAJAvQCCAL0AAkC9AIIAvQACQL0BAgC9AAJAvQCCAL0AAkC9AIIAvQACQL0AggC9AAJAvQCCAL0AAkC9AIIAvQACQL0AggC9AAJAuQECALkAAkC5AIIAuQACQLkAggC5AAJAuQECALkAAkC5AIIAuQACQLkAggC5AAJAuQECALkAAkC5AIIAuQACQLkAggC5AAJAuQCCALkAAkC5AIIAuQACQLkAggC5AAJAuQCCALkAAkDBAQIAwQACQMEAggDBAAJAwQCCAMEAAkDBAQIAwQACQMEAggDBAAJAwQCCAMEAAkDBAQIAwQACQMEAggDBAAJAwQCCAMEAAkDBAIIAwQACQMEAggDBAAJAwQCCAMEAAkDBAIIAwQACQKUBAgClAAJA5QCCAOUAAkDlAIIA5QACQOEBAgDhAAJA4QCCAOEAAkDhAIIA4QACQN0BAgDdAAJA3QCCAN0AAkDdAIIA3QACQNkBAgDZAAJApQECAKUAA/y8A';
 
+// Helper to build a minimal single-track MIDI file (format 0, division 96)
+function buildMidi(trackBytes) {
+	var header = [
+		0x4D, 0x54, 0x68, 0x64, // MThd
+		0x00, 0x00, 0x00, 0x06, // Header length
+		0x00, 0x00,             // Format 0
+		0x00, 0x01,             // 1 track
+		0x00, 0x60,             // Division = 96
+		0x4D, 0x54, 0x72, 0x6B, // MTrk
+	];
+	// Track length as 4 bytes
+	var len = trackBytes.length;
+	header.push((len >> 24) & 0xFF, (len >> 16) & 0xFF, (len >> 8) & 0xFF, len & 0xFF);
+	return new Uint8Array(header.concat(trackBytes));
+}
+
+// End of Track event (delta=0)
+var EOT = [0x00, 0xFF, 0x2F, 0x00];
+
 describe('MidiPlayerJS', function() {
 	describe('#Utils', function () {
 		describe('#byteToHex()', function () {
@@ -125,6 +144,49 @@ describe('MidiPlayerJS', function() {
 			})
 		});
 
+		describe('#tempoMap', function () {
+			it('should build a tempo map with at least one entry', function () {
+				var Player = new MidiPlayer.Player();
+				Player.loadDataUri(zelda);
+				assert.ok(Player.tempoMap.length >= 1);
+				assert.equal(Player.tempoMap[0].tick, 0);
+			});
+
+			it('should have a sorted tempo map', function () {
+				var Player = new MidiPlayer.Player();
+				Player.loadDataUri(zelda);
+				for (var i = 1; i < Player.tempoMap.length; i++) {
+					assert.ok(Player.tempoMap[i].tick >= Player.tempoMap[i - 1].tick);
+				}
+			});
+
+			it('getSongTime should equal ticksToSeconds(0, totalTicks)', function () {
+				var Player = new MidiPlayer.Player();
+				Player.loadDataUri(zelda);
+				assert.equal(Player.getSongTime(), Player.ticksToSeconds(0, Player.totalTicks));
+			});
+
+			it('ticksToSeconds and secondsToTicks should be inverse operations', function () {
+				var Player = new MidiPlayer.Player();
+				Player.loadDataUri(zelda);
+				var songTime = Player.getSongTime();
+				var halfTime = songTime / 2;
+				var tick = Player.secondsToTicks(halfTime);
+				var seconds = Player.ticksToSeconds(0, tick);
+				// Allow 1 second tolerance due to rounding
+				assert.ok(Math.abs(seconds - halfTime) < 1);
+			});
+
+			it('skipToSeconds should navigate to correct tick', function () {
+				var Player = new MidiPlayer.Player();
+				Player.loadDataUri(zelda);
+				var targetSeconds = Player.getSongTime() / 2;
+				Player.skipToSeconds(targetSeconds);
+				var expectedTick = Player.secondsToTicks(targetSeconds);
+				assert.equal(Player.startTick, expectedTick);
+			});
+		});
+
 		describe('#getSongTimeRemaining', function () {
 			let Player;
 			beforeEach(function () {
@@ -144,6 +206,205 @@ describe('MidiPlayerJS', function() {
 				Player.stop();
 				assert.equal(Player.getSongTimeRemaining(), Player.getSongTime());
 			})
+		});
+	});
+
+	describe('#Event Parsing', function () {
+		describe('Pitch Bend', function () {
+			it('should parse pitch bend value in non-running-status', function () {
+				// Pitch Bend ch1: status=0xE0, LSB=0x00, MSB=0x40 => value = (0x40 << 7) | 0x00 = 8192
+				var midi = buildMidi([0x00, 0xE0, 0x00, 0x40].concat(EOT));
+				var Player = new MidiPlayer.Player();
+				Player.loadArrayBuffer(midi.buffer);
+				var events = Player.events[0];
+				var pb = events.find(function(e) { return e.name === 'Pitch Bend'; });
+				assert.ok(pb, 'Pitch Bend event should exist');
+				assert.equal(pb.value, 8192);
+				assert.equal(pb.channel, 1);
+			});
+
+			it('should parse pitch bend value in running status', function () {
+				// First: normal Pitch Bend, then running status with different value
+				var midi = buildMidi([
+					0x00, 0xE0, 0x00, 0x40, // Pitch Bend ch1, value=8192
+					0x00, 0x7F, 0x7F,        // Running status: LSB=0x7F, MSB=0x7F => (0x7F << 7) | 0x7F = 16383
+				].concat(EOT));
+				var Player = new MidiPlayer.Player();
+				Player.loadArrayBuffer(midi.buffer);
+				var events = Player.events[0];
+				var pbEvents = events.filter(function(e) { return e.name === 'Pitch Bend'; });
+				assert.equal(pbEvents.length, 2);
+				assert.equal(pbEvents[0].value, 8192);
+				assert.equal(pbEvents[1].value, 16383);
+				assert.equal(pbEvents[1].running, true);
+			});
+		});
+
+		describe('Key Signature', function () {
+			it('should parse flat key signatures correctly', function () {
+				// Key Signature: FF 59 02 FE 00 => sf=-2 (Bb), mi=0 (Major)
+				var midi = buildMidi([0x00, 0xFF, 0x59, 0x02, 0xFE, 0x00].concat(EOT));
+				var Player = new MidiPlayer.Player();
+				Player.loadArrayBuffer(midi.buffer);
+				var events = Player.events[0];
+				var ks = events.find(function(e) { return e.name === 'Key Signature'; });
+				assert.ok(ks, 'Key Signature event should exist');
+				assert.equal(ks.keySignature, 'Bb Major');
+			});
+
+			it('should parse sharp key signatures correctly', function () {
+				// Key Signature: FF 59 02 02 00 => sf=2 (D), mi=0 (Major)
+				var midi = buildMidi([0x00, 0xFF, 0x59, 0x02, 0x02, 0x00].concat(EOT));
+				var Player = new MidiPlayer.Player();
+				Player.loadArrayBuffer(midi.buffer);
+				var events = Player.events[0];
+				var ks = events.find(function(e) { return e.name === 'Key Signature'; });
+				assert.ok(ks, 'Key Signature event should exist');
+				assert.equal(ks.keySignature, 'D Major');
+			});
+
+			it('should parse minor key signatures correctly', function () {
+				// Key Signature: FF 59 02 FC 01 => sf=-4 (Ab), mi=1 (Minor)
+				var midi = buildMidi([0x00, 0xFF, 0x59, 0x02, 0xFC, 0x01].concat(EOT));
+				var Player = new MidiPlayer.Player();
+				Player.loadArrayBuffer(midi.buffer);
+				var events = Player.events[0];
+				var ks = events.find(function(e) { return e.name === 'Key Signature'; });
+				assert.ok(ks, 'Key Signature event should exist');
+				assert.equal(ks.keySignature, 'Ab Minor');
+			});
+		});
+
+		describe('Controller Change (running status)', function () {
+			it('should parse correct controller number and value under running status', function () {
+				var midi = buildMidi([
+					// Controller Change ch1: status=0xB0, controller=7 (volume), value=127
+					0x00, 0xB0, 0x07, 0x7F,
+					// Running status: controller=10 (pan), value=64
+					0x00, 0x0A, 0x40,
+				].concat(EOT));
+				var Player = new MidiPlayer.Player();
+				Player.loadArrayBuffer(midi.buffer);
+				var events = Player.events[0];
+				var ccEvents = events.filter(function(e) { return e.name === 'Controller Change'; });
+				assert.equal(ccEvents.length, 2);
+				// First event (normal status)
+				assert.equal(ccEvents[0].number, 7);
+				assert.equal(ccEvents[0].value, 127);
+				assert.equal(ccEvents[0].channel, 1);
+				// Second event (running status)
+				assert.equal(ccEvents[1].number, 10);
+				assert.equal(ccEvents[1].value, 64);
+				assert.equal(ccEvents[1].channel, 1);
+				assert.equal(ccEvents[1].running, true);
+			});
+		});
+
+		describe('Marker meta event', function () {
+			it('should include string data on Marker events', function () {
+				// Marker: FF 06 06 "Chorus"
+				var midi = buildMidi([
+					0x00, 0xFF, 0x06, 0x06,
+					0x43, 0x68, 0x6F, 0x72, 0x75, 0x73, // "Chorus"
+				].concat(EOT));
+				var Player = new MidiPlayer.Player();
+				Player.loadArrayBuffer(midi.buffer);
+				var events = Player.events[0];
+				var marker = events.find(function(e) { return e.name === 'Marker'; });
+				assert.ok(marker, 'Marker event should exist');
+				assert.equal(marker.string, 'Chorus');
+			});
+		});
+
+		describe('Meta event with multi-byte VarInt length', function () {
+			it('should correctly parse text events longer than 127 bytes', function () {
+				// Text Event with 200 bytes of 'A': FF 01 81 48 [200x 0x41]
+				var textData = [];
+				for (var i = 0; i < 200; i++) textData.push(0x41);
+				var trackBytes = [0x00, 0xFF, 0x01, 0x81, 0x48].concat(textData).concat(EOT);
+				var midi = buildMidi(trackBytes);
+				var Player = new MidiPlayer.Player();
+				Player.loadArrayBuffer(midi.buffer);
+				var events = Player.events[0];
+				var textEvent = events.find(function(e) { return e.name === 'Text Event'; });
+				assert.ok(textEvent, 'Text Event should exist');
+				assert.equal(textEvent.string.length, 200);
+				// Should also find End of Track (proves pointer advanced correctly)
+				var eot = events.find(function(e) { return e.name === 'End of Track'; });
+				assert.ok(eot, 'End of Track should be parsed after long text event');
+			});
+		});
+
+		describe('setEventIndexByTick', function () {
+			it('should set eventIndex as a number, not a string', function () {
+				var Player = new MidiPlayer.Player();
+				Player.loadDataUri(zelda);
+				Player.tracks[0].setEventIndexByTick(500);
+				assert.strictEqual(typeof Player.tracks[0].eventIndex, 'number');
+			});
+		});
+	});
+
+	describe('#Tempo Map', function () {
+		it('should seed tempo map with default 120 BPM, not last-seen tempo', function () {
+			// Format 1 MIDI with Set Tempo at tick 0 (100 BPM) and tick 480 (200 BPM)
+			var midi = new Uint8Array([
+				// MThd
+				0x4D, 0x54, 0x68, 0x64,
+				0x00, 0x00, 0x00, 0x06,
+				0x00, 0x01,             // Format 1
+				0x00, 0x02,             // 2 tracks
+				0x01, 0xE0,             // Division = 480
+				// Track 1 (tempo track)
+				0x4D, 0x54, 0x72, 0x6B,
+				0x00, 0x00, 0x00, 0x13, // 19 bytes
+				0x00, 0xFF, 0x51, 0x03, 0x09, 0x27, 0xC0, // Set Tempo 100 BPM at tick 0
+				0x83, 0x60, 0xFF, 0x51, 0x03, 0x04, 0x93, 0xE0, // Set Tempo 200 BPM at tick 480
+				0x00, 0xFF, 0x2F, 0x00,
+				// Track 2 (empty)
+				0x4D, 0x54, 0x72, 0x6B,
+				0x00, 0x00, 0x00, 0x04,
+				0x00, 0xFF, 0x2F, 0x00,
+			]);
+			var Player = new MidiPlayer.Player();
+			Player.loadArrayBuffer(midi.buffer);
+
+			// Tempo map should have default 120 at tick 0, overridden by 100 BPM at tick 0, then 200 at tick 480
+			assert.equal(Player.tempoMap.length, 2);
+			assert.equal(Player.tempoMap[0].tick, 0);
+			assert.equal(Player.tempoMap[0].tempo, 100);
+			assert.equal(Player.tempoMap[1].tick, 480);
+			assert.equal(Player.tempoMap[1].tempo, 200);
+		});
+
+		it('should use default 120 BPM at tick 0 when no Set Tempo at tick 0 exists', function () {
+			// Format 1 MIDI with Set Tempo only at tick 480 (200 BPM)
+			var midi = new Uint8Array([
+				// MThd
+				0x4D, 0x54, 0x68, 0x64,
+				0x00, 0x00, 0x00, 0x06,
+				0x00, 0x01,             // Format 1
+				0x00, 0x02,             // 2 tracks
+				0x01, 0xE0,             // Division = 480
+				// Track 1 (tempo track)
+				0x4D, 0x54, 0x72, 0x6B,
+				0x00, 0x00, 0x00, 0x0C, // 12 bytes
+				0x83, 0x60, 0xFF, 0x51, 0x03, 0x04, 0x93, 0xE0, // Set Tempo 200 BPM at tick 480
+				0x00, 0xFF, 0x2F, 0x00,
+				// Track 2 (empty)
+				0x4D, 0x54, 0x72, 0x6B,
+				0x00, 0x00, 0x00, 0x04,
+				0x00, 0xFF, 0x2F, 0x00,
+			]);
+			var Player = new MidiPlayer.Player();
+			Player.loadArrayBuffer(midi.buffer);
+
+			// Should have default 120 at tick 0, then 200 at tick 480
+			assert.equal(Player.tempoMap.length, 2);
+			assert.equal(Player.tempoMap[0].tick, 0);
+			assert.equal(Player.tempoMap[0].tempo, 120);
+			assert.equal(Player.tempoMap[1].tick, 480);
+			assert.equal(Player.tempoMap[1].tempo, 200);
 		});
 	});
 });
