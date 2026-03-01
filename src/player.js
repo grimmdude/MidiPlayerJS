@@ -236,7 +236,7 @@ class Player {
 
 			}, this);
 
-			if (!dryRun) this.triggerPlayerEvent('playing', {tick: this.tick});
+			if (!dryRun && this.isPlaying()) this.triggerPlayerEvent('playing', {tick: this.tick});
 			this.inLoop = false;
 		}
 	}
