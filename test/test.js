@@ -125,6 +125,49 @@ describe('MidiPlayerJS', function() {
 			})
 		});
 
+		describe('#tempoMap', function () {
+			it('should build a tempo map with at least one entry', function () {
+				var Player = new MidiPlayer.Player();
+				Player.loadDataUri(zelda);
+				assert.ok(Player.tempoMap.length >= 1);
+				assert.equal(Player.tempoMap[0].tick, 0);
+			});
+
+			it('should have a sorted tempo map', function () {
+				var Player = new MidiPlayer.Player();
+				Player.loadDataUri(zelda);
+				for (var i = 1; i < Player.tempoMap.length; i++) {
+					assert.ok(Player.tempoMap[i].tick >= Player.tempoMap[i - 1].tick);
+				}
+			});
+
+			it('getSongTime should equal ticksToSeconds(0, totalTicks)', function () {
+				var Player = new MidiPlayer.Player();
+				Player.loadDataUri(zelda);
+				assert.equal(Player.getSongTime(), Player.ticksToSeconds(0, Player.totalTicks));
+			});
+
+			it('ticksToSeconds and secondsToTicks should be inverse operations', function () {
+				var Player = new MidiPlayer.Player();
+				Player.loadDataUri(zelda);
+				var songTime = Player.getSongTime();
+				var halfTime = songTime / 2;
+				var tick = Player.secondsToTicks(halfTime);
+				var seconds = Player.ticksToSeconds(0, tick);
+				// Allow 1 second tolerance due to rounding
+				assert.ok(Math.abs(seconds - halfTime) < 1);
+			});
+
+			it('skipToSeconds should navigate to correct tick', function () {
+				var Player = new MidiPlayer.Player();
+				Player.loadDataUri(zelda);
+				var targetSeconds = Player.getSongTime() / 2;
+				Player.skipToSeconds(targetSeconds);
+				var expectedTick = Player.secondsToTicks(targetSeconds);
+				assert.equal(Player.startTick, expectedTick);
+			});
+		});
+
 		describe('#getSongTimeRemaining', function () {
 			let Player;
 			beforeEach(function () {
