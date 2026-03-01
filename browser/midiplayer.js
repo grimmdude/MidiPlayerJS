@@ -921,10 +921,6 @@ var MidiPlayer = (function () {
                   if (event.hasOwnProperty('name') && event.name === 'Set Tempo') {
                     // Grab tempo if available.
                     this.setTempo(event.data);
-
-                    if (this.isPlaying()) {
-                      this.pause().play();
-                    }
                   }
 
                   this.emitEvent(event);
@@ -1362,7 +1358,9 @@ var MidiPlayer = (function () {
       key: "getCurrentTick",
       value: function getCurrentTick() {
         if (!this.startTime) return this.startTick;
-        return Math.round((new Date().getTime() - this.startTime) / 1000 * (this.division * (this.tempo / 60))) + this.startTick;
+        var elapsedSeconds = (new Date().getTime() - this.startTime) / 1000;
+        var startSeconds = this.ticksToSeconds(0, this.startTick);
+        return this.secondsToTicks(startSeconds + elapsedSeconds);
       }
       /**
        * Sends MIDI event out to listener.
