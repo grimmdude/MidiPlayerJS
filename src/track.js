@@ -65,7 +65,7 @@ class Track	{
 	setEventIndexByTick(tick) {
 		tick = tick || 0;
 
-		for (var i in this.events) {
+		for (var i = 0; i < this.events.length; i++) {
 			if (this.events[i].tick >= tick) {
 				this.eventIndex = i;
 				return this;
@@ -226,11 +226,14 @@ class Track	{
 					eventJson.name = 'Key Signature';
 					eventJson.data = this.data.subarray(eventStartIndex + 3, eventStartIndex + 5);
 
-					if (eventJson.data[0] >= 0) {
-						eventJson.keySignature = Constants.CIRCLE_OF_FIFTHS[eventJson.data[0]];
+					// sf byte is signed (-7 to 7), but Uint8Array gives unsigned values
+					var sf = eventJson.data[0] > 127 ? eventJson.data[0] - 256 : eventJson.data[0];
 
-					} else if (eventJson.data[0] < 0) {
-						eventJson.keySignature = Constants.CIRCLE_OF_FOURTHS[Math.abs(eventJson.data[0])];
+					if (sf >= 0) {
+						eventJson.keySignature = Constants.CIRCLE_OF_FIFTHS[sf];
+
+					} else {
+						eventJson.keySignature = Constants.CIRCLE_OF_FOURTHS[Math.abs(sf)];
 					}
 
 					if (eventJson.data[1] == 0) {
@@ -253,7 +256,7 @@ class Track	{
 			const length = Utils.readVarInt(this.data.subarray(eventStartIndex + 2, eventStartIndex + 2 + varIntLength));
 
 			//console.log(eventJson);
-			this.pointer += deltaByteCount + 3 + length;
+			this.pointer += deltaByteCount + 2 + varIntLength + length;
 
 			//console.log(eventJson);
 
@@ -306,16 +309,16 @@ class Track	{
 					// Polyphonic Key Pressure
 					eventJson.name = 'Polyphonic Key Pressure';
 					eventJson.channel = this.lastStatus - 0xa0 + 1;
-					eventJson.note = Constants.NOTES[this.data[eventStartIndex + 1]];
-					eventJson.pressure = event[1];
+					eventJson.note = Constants.NOTES[this.data[eventStartIndex]];
+					eventJson.pressure = this.data[eventStartIndex + 1];
 					this.pointer += deltaByteCount + 2;
 
 				} else if (this.lastStatus <= 0xbf) {
 					// Controller Change
 					eventJson.name = 'Controller Change';
 					eventJson.channel = this.lastStatus - 0xb0 + 1;
-					eventJson.number = this.data[eventStartIndex + 1];
-					eventJson.value = this.data[eventStartIndex + 2];
+					eventJson.number = this.data[eventStartIndex];
+					eventJson.value = this.data[eventStartIndex + 1];
 					this.pointer += deltaByteCount + 2;
 
 				} else if (this.lastStatus <= 0xcf) {
@@ -368,7 +371,7 @@ class Track	{
 					eventJson.name = 'Polyphonic Key Pressure';
 					eventJson.channel = this.lastStatus - 0xa0 + 1;
 					eventJson.note = Constants.NOTES[this.data[eventStartIndex + 1]];
-					eventJson.pressure = event[2];
+					eventJson.pressure = this.data[eventStartIndex + 2];
 					this.pointer += deltaByteCount + 3;
 
 				} else if (this.data[eventStartIndex] <= 0xbf) {
@@ -396,6 +399,7 @@ class Track	{
 					// Pitch Bend
 					eventJson.name = 'Pitch Bend';
 					eventJson.channel = this.lastStatus - 0xe0 + 1;
+					eventJson.value = ((this.data[eventStartIndex + 2] & 0x7f) << 7) | (this.data[eventStartIndex + 1] & 0x7f);
 					this.pointer += deltaByteCount + 3;
 
 				} else {

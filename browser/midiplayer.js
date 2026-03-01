@@ -296,7 +296,7 @@ var MidiPlayer = (function () {
       value: function setEventIndexByTick(tick) {
         tick = tick || 0;
 
-        for (var i in this.events) {
+        for (var i = 0; i < this.events.length; i++) {
           if (this.events[i].tick >= tick) {
             this.eventIndex = i;
             return this;
@@ -350,9 +350,8 @@ var MidiPlayer = (function () {
           var eventReady = elapsedTicks >= delta;
 
           if (this.pointer < this.data.length && (dryRun || eventReady)) {
-            var _event = this.parseEvent();
-
-            if (this.enabled) return _event; // Recursively call this function for each event ahead that has 0 delta time?
+            var event = this.parseEvent();
+            if (this.enabled) return event; // Recursively call this function for each event ahead that has 0 delta time?
           }
         } else {
           // Let's actually play the MIDI from the generated JSON events created by the dry run.
@@ -493,12 +492,14 @@ var MidiPlayer = (function () {
               // Key Signature
               // FF 59 02 sf mi
               eventJson.name = 'Key Signature';
-              eventJson.data = this.data.subarray(eventStartIndex + 3, eventStartIndex + 5);
+              eventJson.data = this.data.subarray(eventStartIndex + 3, eventStartIndex + 5); // sf byte is signed (-7 to 7), but Uint8Array gives unsigned values
 
-              if (eventJson.data[0] >= 0) {
-                eventJson.keySignature = Constants.CIRCLE_OF_FIFTHS[eventJson.data[0]];
-              } else if (eventJson.data[0] < 0) {
-                eventJson.keySignature = Constants.CIRCLE_OF_FOURTHS[Math.abs(eventJson.data[0])];
+              var sf = eventJson.data[0] > 127 ? eventJson.data[0] - 256 : eventJson.data[0];
+
+              if (sf >= 0) {
+                eventJson.keySignature = Constants.CIRCLE_OF_FIFTHS[sf];
+              } else {
+                eventJson.keySignature = Constants.CIRCLE_OF_FOURTHS[Math.abs(sf)];
               }
 
               if (eventJson.data[1] == 0) {
@@ -522,7 +523,7 @@ var MidiPlayer = (function () {
           var varIntLength = Utils.getVarIntLength(this.data.subarray(eventStartIndex + 2));
           var length = Utils.readVarInt(this.data.subarray(eventStartIndex + 2, eventStartIndex + 2 + varIntLength)); //console.log(eventJson);
 
-          this.pointer += deltaByteCount + 3 + length; //console.log(eventJson);
+          this.pointer += deltaByteCount + 2 + varIntLength + length; //console.log(eventJson);
         } else if (this.data[eventStartIndex] === 0xf0) {
           // Sysex
           eventJson.name = 'Sysex';
@@ -562,15 +563,15 @@ var MidiPlayer = (function () {
               // Polyphonic Key Pressure
               eventJson.name = 'Polyphonic Key Pressure';
               eventJson.channel = this.lastStatus - 0xa0 + 1;
-              eventJson.note = Constants.NOTES[this.data[eventStartIndex + 1]];
-              eventJson.pressure = event[1];
+              eventJson.note = Constants.NOTES[this.data[eventStartIndex]];
+              eventJson.pressure = this.data[eventStartIndex + 1];
               this.pointer += deltaByteCount + 2;
             } else if (this.lastStatus <= 0xbf) {
               // Controller Change
               eventJson.name = 'Controller Change';
               eventJson.channel = this.lastStatus - 0xb0 + 1;
-              eventJson.number = this.data[eventStartIndex + 1];
-              eventJson.value = this.data[eventStartIndex + 2];
+              eventJson.number = this.data[eventStartIndex];
+              eventJson.value = this.data[eventStartIndex + 1];
               this.pointer += deltaByteCount + 2;
             } else if (this.lastStatus <= 0xcf) {
               // Program Change
@@ -616,7 +617,7 @@ var MidiPlayer = (function () {
               eventJson.name = 'Polyphonic Key Pressure';
               eventJson.channel = this.lastStatus - 0xa0 + 1;
               eventJson.note = Constants.NOTES[this.data[eventStartIndex + 1]];
-              eventJson.pressure = event[2];
+              eventJson.pressure = this.data[eventStartIndex + 2];
               this.pointer += deltaByteCount + 3;
             } else if (this.data[eventStartIndex] <= 0xbf) {
               // Controller Change
@@ -640,6 +641,7 @@ var MidiPlayer = (function () {
               // Pitch Bend
               eventJson.name = 'Pitch Bend';
               eventJson.channel = this.lastStatus - 0xe0 + 1;
+              eventJson.value = (this.data[eventStartIndex + 2] & 0x7f) << 7 | this.data[eventStartIndex + 1] & 0x7f;
               this.pointer += deltaByteCount + 3;
             } else {
               throw "Unknown event: ".concat(this.data[eventStartIndex]); //eventJson.name = `Unknown.  Pointer: ${this.pointer.toString()}, ${eventStartIndex.toString()}, ${this.data[eventStartIndex]}, ${this.data.length}`;
@@ -777,6 +779,7 @@ var MidiPlayer = (function () {
       key: "fileLoaded",
       value: function fileLoaded() {
         if (!this.validate()) throw 'Invalid MIDI file; should start with MThd';
+        this.defaultTempo = 120;
         return this.setTempo(this.defaultTempo).getDivision().getFormat().getTracks().dryRun();
       }
       /**
@@ -897,7 +900,6 @@ var MidiPlayer = (function () {
               if (dryRun && event) {
                 if (event.hasOwnProperty('name') && event.name === 'Set Tempo') {
                   // Grab tempo if available.
-                  this.defaultTempo = event.data;
                   this.setTempo(event.data);
                 }
 
