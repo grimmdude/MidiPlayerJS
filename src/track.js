@@ -188,6 +188,7 @@ class Track	{
 					break;
 				case 0x06: // Marker
 					eventJson.name = 'Marker';
+					eventJson.string = this.getStringData(eventStartIndex);
 					break;
 				case 0x07: // Cue Point
 					eventJson.name = 'Cue Point';

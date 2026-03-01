@@ -438,6 +438,7 @@ var MidiPlayer = (function () {
             case 0x06:
               // Marker
               eventJson.name = 'Marker';
+              eventJson.string = this.getStringData(eventStartIndex);
               break;
 
             case 0x07:
