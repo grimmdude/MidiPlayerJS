@@ -1,16 +1,6 @@
 var MidiPlayer = (function () {
   'use strict';
 
-  function _typeof(obj) {
-    "@babel/helpers - typeof";
-
-    return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (obj) {
-      return typeof obj;
-    } : function (obj) {
-      return obj && "function" == typeof Symbol && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
-    }, _typeof(obj);
-  }
-
   function _classCallCheck(instance, Constructor) {
     if (!(instance instanceof Constructor)) {
       throw new TypeError("Cannot call a class as a function");
@@ -355,10 +345,15 @@ var MidiPlayer = (function () {
           }
         } else {
           // Let's actually play the MIDI from the generated JSON events created by the dry run.
-          if (this.events[this.eventIndex] && this.events[this.eventIndex].tick <= currentTick) {
+          // Process all events that have passed to avoid falling behind on dense MIDI files.
+          var events = [];
+
+          while (this.events[this.eventIndex] && this.events[this.eventIndex].tick <= currentTick) {
+            if (this.enabled) events.push(this.events[this.eventIndex]);
             this.eventIndex++;
-            if (this.enabled) return this.events[this.eventIndex - 1];
           }
+
+          if (events.length > 0) return events;
         }
 
         return null;
@@ -696,7 +691,8 @@ var MidiPlayer = (function () {
       this.midiChunksByteLength = null;
       this.division;
       this.format;
-      this.setIntervalId = false;
+      this.setTimeoutId = false;
+      this.scheduledTime = 0;
       this.tracks = [];
       this.instruments = [];
       this.defaultTempo = 120;
@@ -896,34 +892,34 @@ var MidiPlayer = (function () {
               this.triggerPlayerEvent('endOfFile');
               this.stop();
             } else {
-              var event = track.handleEvent(this.tick, dryRun);
+              var result = track.handleEvent(this.tick, dryRun);
 
-              if (dryRun && event) {
-                if (event.hasOwnProperty('name') && event.name === 'Set Tempo') {
+              if (dryRun && result) {
+                if (result.hasOwnProperty('name') && result.name === 'Set Tempo') {
                   // Grab tempo if available.
-                  this.setTempo(event.data);
+                  this.setTempo(result.data);
                 }
 
-                if (event.hasOwnProperty('name') && event.name === 'Program Change') {
-                  if (!this.instruments.includes(event.value)) {
-                    this.instruments.push(event.value);
+                if (result.hasOwnProperty('name') && result.name === 'Program Change') {
+                  if (!this.instruments.includes(result.value)) {
+                    this.instruments.push(result.value);
                   }
                 }
-              } else if (event) {
-                if (event.hasOwnProperty('name') && event.name === 'Set Tempo') {
-                  // Grab tempo if available.
-                  this.setTempo(event.data);
-
-                  if (this.isPlaying()) {
-                    this.pause().play();
+              } else if (result) {
+                // result is an array of events during playback
+                var events = Array.isArray(result) ? result : [result];
+                events.forEach(function (event) {
+                  if (event.hasOwnProperty('name') && event.name === 'Set Tempo') {
+                    // Grab tempo if available.
+                    this.setTempo(event.data);
                   }
-                }
 
-                this.emitEvent(event);
+                  this.emitEvent(event);
+                }, this);
               }
             }
           }, this);
-          if (!dryRun) this.triggerPlayerEvent('playing', {
+          if (!dryRun && this.isPlaying()) this.triggerPlayerEvent('playing', {
             tick: this.tick
           });
           this.inLoop = false;
@@ -962,23 +958,34 @@ var MidiPlayer = (function () {
       value: function play() {
         if (this.isPlaying()) throw 'Already playing...'; // Initialize
 
-        if (!this.startTime) this.startTime = new Date().getTime(); // Start play loop
-        //window.requestAnimationFrame(this.playLoop.bind(this));
+        if (!this.startTime) this.startTime = new Date().getTime(); // Start play loop using drift-correcting setTimeout
 
-        this.setIntervalId = setInterval(this.playLoop.bind(this), this.sampleRate); //this.setIntervalId = this.loop();
-
+        this.scheduledTime = Date.now();
+        this.schedulePlayLoop(this.sampleRate);
         return this;
       }
-    }, {
-      key: "loop",
-      value: function loop() {
-        setTimeout(function () {
-          // Do Something Here
-          this.playLoop(); // Then recall the parent function to
-          // create a recursive loop.
+      /**
+       * Schedules the next play loop iteration, correcting for timer drift.
+       * @param {number} delay - Delay in milliseconds before next iteration.
+       * @return {undefined}
+       */
 
-          this.loop();
-        }.bind(this), this.sampleRate);
+    }, {
+      key: "schedulePlayLoop",
+      value: function schedulePlayLoop(delay) {
+        var _this = this;
+
+        this.setTimeoutId = setTimeout(function () {
+          _this.playLoop();
+
+          if (_this.setTimeoutId !== false) {
+            _this.scheduledTime += _this.sampleRate;
+
+            var drift = Date.now() - _this.scheduledTime;
+
+            _this.schedulePlayLoop(Math.max(0, _this.sampleRate - drift));
+          }
+        }, delay);
       }
       /**
        * Pauses playback if playing.
@@ -988,8 +995,9 @@ var MidiPlayer = (function () {
     }, {
       key: "pause",
       value: function pause() {
-        clearInterval(this.setIntervalId);
-        this.setIntervalId = false;
+        clearTimeout(this.setTimeoutId);
+        this.setTimeoutId = false;
+        this.scheduledTime = 0;
         this.startTick = this.tick;
         this.startTime = 0;
         return this;
@@ -1002,8 +1010,9 @@ var MidiPlayer = (function () {
     }, {
       key: "stop",
       value: function stop() {
-        clearInterval(this.setIntervalId);
-        this.setIntervalId = false;
+        clearTimeout(this.setTimeoutId);
+        this.setTimeoutId = false;
+        this.scheduledTime = 0;
         this.startTick = 0;
         this.startTime = 0;
         this.resetTracks();
@@ -1026,13 +1035,50 @@ var MidiPlayer = (function () {
             this.setTempo(this.tempoMap[i].tempo);
             break;
           }
-        } // Need to set track event indexes to the nearest possible event to the specified tick.
+        } // Emit intermediate state-changing events so the consumer's synth is in the correct state
 
+
+        this.collectStateAtTick(tick).forEach(function (event) {
+          this.emitEvent(event);
+        }, this); // Need to set track event indexes to the nearest possible event to the specified tick.
 
         this.tracks.forEach(function (track) {
           track.setEventIndexByTick(tick);
         });
         return this;
+      }
+      /**
+       * Collects the last state-changing MIDI events (Program Change, Controller Change, Pitch Bend)
+       * before the specified tick across all tracks.
+       * @param {number} tick - Target tick to collect state up to.
+       * @return {array} - Array of state events representing the MIDI state at the target tick.
+       */
+
+    }, {
+      key: "collectStateAtTick",
+      value: function collectStateAtTick(tick) {
+        var dominated = {};
+        this.events.forEach(function (trackEvents) {
+          trackEvents.forEach(function (event) {
+            if (event.tick >= tick) return;
+            var key;
+
+            if (event.name === 'Program Change') {
+              key = 'pc:' + event.channel;
+            } else if (event.name === 'Controller Change') {
+              key = 'cc:' + event.channel + ':' + event.number;
+            } else if (event.name === 'Pitch Bend') {
+              key = 'pb:' + event.channel;
+            }
+
+            if (key) {
+              dominated[key] = event;
+            }
+          });
+        });
+        return Object.keys(dominated).map(function (key) {
+          return dominated[key];
+        });
       }
       /**
        * Skips player pointer to specified percentage.
@@ -1069,7 +1115,7 @@ var MidiPlayer = (function () {
     }, {
       key: "isPlaying",
       value: function isPlaying() {
-        return this.setIntervalId > 0 || _typeof(this.setIntervalId) === 'object';
+        return this.setTimeoutId !== false;
       }
       /**
        * Plays the loaded MIDI file without regard for timing and saves events in this.events.  Essentially used as a parser.
@@ -1353,7 +1399,9 @@ var MidiPlayer = (function () {
       key: "getCurrentTick",
       value: function getCurrentTick() {
         if (!this.startTime) return this.startTick;
-        return Math.round((new Date().getTime() - this.startTime) / 1000 * (this.division * (this.tempo / 60))) + this.startTick;
+        var elapsedSeconds = (new Date().getTime() - this.startTime) / 1000;
+        var startSeconds = this.ticksToSeconds(0, this.startTick);
+        return this.secondsToTicks(startSeconds + elapsedSeconds);
       }
       /**
        * Sends MIDI event out to listener.

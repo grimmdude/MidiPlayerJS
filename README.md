@@ -50,6 +50,12 @@ Player.on('endOfFile', function() {
 
 Note that because of a common practice called "running status" many MIDI files may use `Note on` events with `0` velocity in place of `Note off` events.
 
+## See Also
+
+Need to generate MIDI files programmatically? Check out [MidiWriterJS](https://github.com/grimmdude/MidiWriterJS) — a JavaScript library for creating expressive multi-track MIDI files. Together they form a complete MIDI toolkit:
+
+- **MidiPlayerJS** — parse and play MIDI files with real-time event callbacks
+- **MidiWriterJS** — generate MIDI files programmatically
+
 ## Full API Documentation
 [http://grimmdude.com/MidiPlayerJS/docs/](http://grimmdude.com/MidiPlayerJS/docs/)
-

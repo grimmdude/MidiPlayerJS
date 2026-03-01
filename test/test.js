@@ -141,7 +141,96 @@ describe('MidiPlayerJS', function() {
 				Player.loadDataUri(zelda);
 				Player.skipToTick(skipTicks);
 				assert.equal(Player.getCurrentTick(), skipTicks);
-			})
+			});
+
+			it('should return accurate tick across a tempo change boundary', function () {
+				this.clock = sinon.useFakeTimers();
+				this.clock.tick(5000); // set start time
+
+				// Build a format-1 MIDI with 100 BPM at tick 0, 200 BPM at tick 480 (division=480)
+				var midi = new Uint8Array([
+					0x4D, 0x54, 0x68, 0x64,
+					0x00, 0x00, 0x00, 0x06,
+					0x00, 0x01,             // Format 1
+					0x00, 0x02,             // 2 tracks
+					0x01, 0xE0,             // Division = 480
+					// Track 1 (tempo track)
+					0x4D, 0x54, 0x72, 0x6B,
+					0x00, 0x00, 0x00, 0x13, // 19 bytes
+					0x00, 0xFF, 0x51, 0x03, 0x09, 0x27, 0xC0, // Set Tempo 100 BPM at tick 0
+					0x83, 0x60, 0xFF, 0x51, 0x03, 0x04, 0x93, 0xE0, // Set Tempo 200 BPM at tick 480
+					0x00, 0xFF, 0x2F, 0x00,
+					// Track 2 (note track with enough ticks)
+					0x4D, 0x54, 0x72, 0x6B,
+					0x00, 0x00, 0x00, 0x09, // 9 bytes
+					0x00, 0x90, 0x3C, 0x7F, // Note On C4
+					0x87, 0x40, 0xFF, 0x2F, 0x00, // delta=960, End of Track
+				]);
+
+				var Player = new MidiPlayer.Player();
+				Player.loadArrayBuffer(midi.buffer);
+
+				// At 100 BPM with division=480: 480 ticks = 0.6s
+				// After tick 480, tempo is 200 BPM: 480 ticks = 0.3s
+				// Total song = 960 ticks over 0.9s
+
+				Player.play();
+
+				// Advance 600ms (should be right at tick 480)
+				this.clock.tick(600);
+				var tickAt600ms = Player.getCurrentTick();
+				assert.ok(Math.abs(tickAt600ms - 480) <= 1, 'At 600ms should be ~480 ticks, got ' + tickAt600ms);
+
+				// Advance another 150ms (total 750ms) - in 200 BPM zone, 150ms = 240 ticks
+				this.clock.tick(150);
+				var tickAt750ms = Player.getCurrentTick();
+				assert.ok(Math.abs(tickAt750ms - 720) <= 1, 'At 750ms should be ~720 ticks, got ' + tickAt750ms);
+
+				Player.stop();
+				sinon.restore();
+			});
+		});
+
+		describe('#playLoop tempo handling', function () {
+			it('should not call pause().play() on Set Tempo events during playback', function () {
+				this.clock = sinon.useFakeTimers();
+				this.clock.tick(5000);
+
+				// Build MIDI with a Set Tempo event at tick 0
+				var midi = new Uint8Array([
+					0x4D, 0x54, 0x68, 0x64,
+					0x00, 0x00, 0x00, 0x06,
+					0x00, 0x01,
+					0x00, 0x02,
+					0x01, 0xE0,             // Division = 480
+					// Track 1 (tempo track)
+					0x4D, 0x54, 0x72, 0x6B,
+					0x00, 0x00, 0x00, 0x0B, // 11 bytes
+					0x00, 0xFF, 0x51, 0x03, 0x09, 0x27, 0xC0, // Set Tempo 100 BPM at tick 0
+					0x00, 0xFF, 0x2F, 0x00,
+					// Track 2
+					0x4D, 0x54, 0x72, 0x6B,
+					0x00, 0x00, 0x00, 0x09, // 9 bytes
+					0x00, 0x90, 0x3C, 0x7F,
+					0x83, 0x60, 0xFF, 0x2F, 0x00,
+				]);
+
+				var Player = new MidiPlayer.Player();
+				Player.loadArrayBuffer(midi.buffer);
+				Player.play();
+
+				var pauseSpy = sinon.spy(Player, 'pause');
+
+				// Tick forward to process events
+				this.clock.tick(100);
+
+				// pause should not have been called by the playLoop for tempo changes
+				assert.equal(pauseSpy.callCount, 0, 'pause() should not be called on Set Tempo events');
+
+				pauseSpy.restore();
+				Player.stop();
+				sinon.restore();
+			});
 		});
 
 		describe('#tempoMap', function () {
@@ -342,6 +431,86 @@ describe('MidiPlayerJS', function() {
 				Player.tracks[0].setEventIndexByTick(500);
 				assert.strictEqual(typeof Player.tracks[0].eventIndex, 'number');
 			});
+		});
+	});
+
+	describe('#skipToTick state events', function () {
+		it('should emit Program Change when skipping past one', function () {
+			// Program Change ch1 at tick 0: status=0xC0, program=5
+			var midi = buildMidi([
+				0x00, 0xC0, 0x05,       // Program Change ch1, program 5 at tick 0
+				0x60, 0x90, 0x3C, 0x7F, // Note On at tick 96
+			].concat(EOT));
+			var events = [];
+			var Player = new MidiPlayer.Player(function(e) { events.push(e); });
+			Player.loadArrayBuffer(midi.buffer);
+			Player.skipToTick(96);
+			var pc = events.find(function(e) { return e.name === 'Program Change'; });
+			assert.ok(pc, 'Program Change should be emitted');
+			assert.equal(pc.value, 5);
+			assert.equal(pc.channel, 1);
+		});
+
+		it('should emit last Controller Change value per channel+number', function () {
+			// Two CC events on ch1, controller 7: first value=100, then value=80
+			var midi = buildMidi([
+				0x00, 0xB0, 0x07, 0x64, // CC ch1, ctrl 7, val 100 at tick 0
+				0x30, 0xB0, 0x07, 0x50, // CC ch1, ctrl 7, val 80 at tick 48
+				0x30, 0x90, 0x3C, 0x7F, // Note On at tick 96
+			].concat(EOT));
+			var events = [];
+			var Player = new MidiPlayer.Player(function(e) { events.push(e); });
+			Player.loadArrayBuffer(midi.buffer);
+			Player.skipToTick(96);
+			var ccEvents = events.filter(function(e) { return e.name === 'Controller Change' && e.number === 7; });
+			assert.equal(ccEvents.length, 1, 'Should only emit last CC value');
+			assert.equal(ccEvents[0].value, 80);
+		});
+
+		it('should emit Pitch Bend when skipping past one', function () {
+			// Pitch Bend ch1: status=0xE0, LSB=0x00, MSB=0x60 => value = (0x60 << 7) | 0x00 = 12288
+			var midi = buildMidi([
+				0x00, 0xE0, 0x00, 0x60, // Pitch Bend ch1 at tick 0
+				0x60, 0x90, 0x3C, 0x7F, // Note On at tick 96
+			].concat(EOT));
+			var events = [];
+			var Player = new MidiPlayer.Player(function(e) { events.push(e); });
+			Player.loadArrayBuffer(midi.buffer);
+			Player.skipToTick(96);
+			var pb = events.find(function(e) { return e.name === 'Pitch Bend'; });
+			assert.ok(pb, 'Pitch Bend should be emitted');
+			assert.equal(pb.value, 12288);
+		});
+
+		it('should NOT emit Note On/Off events during skip', function () {
+			var midi = buildMidi([
+				0x00, 0x90, 0x3C, 0x7F, // Note On at tick 0
+				0x30, 0x80, 0x3C, 0x00, // Note Off at tick 48
+				0x30, 0xC0, 0x05,       // Program Change at tick 96
+			].concat(EOT));
+			var events = [];
+			var Player = new MidiPlayer.Player(function(e) { events.push(e); });
+			Player.loadArrayBuffer(midi.buffer);
+			Player.skipToTick(100);
+			var noteEvents = events.filter(function(e) { return e.name === 'Note on' || e.name === 'Note off'; });
+			assert.equal(noteEvents.length, 0, 'Note On/Off should not be emitted during skip');
+			var pc = events.find(function(e) { return e.name === 'Program Change'; });
+			assert.ok(pc, 'Program Change should still be emitted');
+		});
+
+		it('should emit state events when using skipToPercent()', function () {
+			// Program Change at tick 0, total ticks ~ 96 (from Note On delta)
+			var midi = buildMidi([
+				0x00, 0xC0, 0x0A,       // Program Change ch1, program 10 at tick 0
+				0x60, 0x90, 0x3C, 0x7F, // Note On at tick 96
+			].concat(EOT));
+			var events = [];
+			var Player = new MidiPlayer.Player(function(e) { events.push(e); });
+			Player.loadArrayBuffer(midi.buffer);
+			Player.skipToPercent(100);
+			var pc = events.find(function(e) { return e.name === 'Program Change'; });
+			assert.ok(pc, 'Program Change should be emitted via skipToPercent');
+			assert.equal(pc.value, 10);
 		});
 	});
 

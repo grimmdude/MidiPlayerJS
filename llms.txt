@@ -1,0 +1,67 @@
+# MidiPlayerJS
+
+> A JavaScript library that parses standard MIDI files and emits JSON events in real time.
+
+MidiPlayerJS reads MIDI files and fires events as they occur, enabling audio playback, visualizations, MIDI interface control, or any custom handling. It does not generate audio itself — you attach handlers to the event emitter. Works in Node.js and the browser. Zero dependencies.
+
+## Install
+
+```
+npm install midi-player-js
+```
+
+## Quick Start
+
+```javascript
+import MidiPlayer from 'midi-player-js';
+
+const player = new MidiPlayer.Player(function(event) {
+    console.log(event);
+});
+
+player.loadFile('./song.mid');
+player.play();
+```
+
+## Core Classes
+
+- `Player` — Main class. Load a MIDI file, control playback, subscribe to events.
+  - Load methods: `loadFile(path)` (Node.js), `loadArrayBuffer(buffer)`, `loadDataUri(uri)`
+  - Playback: `play()`, `pause()`, `stop()`
+  - Seeking: `skipToTick(tick)`, `skipToSeconds(seconds)`, `skipToPercent(percent)`
+  - Info: `getSongTime()`, `getSongTimeRemaining()`, `getSongPercentRemaining()`, `getTotalTicks()`, `getTotalEvents()`, `isPlaying()`
+  - Track control: `enableTrack(n)`, `disableTrack(n)`
+  - Properties: `tracks`, `tempo`, `division`, `format`, `instruments`, `tempoMap`
+  - Time conversion: `ticksToSeconds(startTick, endTick)`, `secondsToTicks(seconds)`
+- `Track` — Represents a single MIDI track. Contains parsed `events` array. Methods: `enable()`, `disable()`, `reset()`.
+
+## Player Events
+
+Subscribe with `player.on(eventName, callback)`:
+
+- `fileLoaded` — MIDI file has been loaded and parsed
+- `midiEvent` — A MIDI event has fired (passes `Event` object with `name`, `noteName`, `noteNumber`, `velocity`, `channel`, `tick`, etc.)
+- `playing` — Called repeatedly during playback (passes `currentTick`)
+- `endOfFile` — Playback has reached the end
+
+## MIDI Event Properties
+
+Each event object may include: `name` (event type), `track`, `tick`, `channel`, `noteNumber`, `noteName`, `velocity`, `number` (CC number), `value` (CC value), `tempo`, `string` (text events).
+
+Common event names: `"Note on"`, `"Note off"`, `"Controller Change"`, `"Program Change"`, `"Set Tempo"`, `"Time Signature"`, `"Key Signature"`, `"Pitch Bend"`, `"End of Track"`.
+
+Note: Many MIDI files use "running status" where Note On with velocity 0 substitutes for Note Off.
+
+## See Also
+
+MidiPlayerJS is part of a MIDI toolkit by the same author:
+
+- [MidiWriterJS](https://github.com/grimmdude/MidiWriterJS) (`npm install midi-writer-js`) — A JavaScript library for programmatically generating expressive multi-track MIDI files. Supports note names, chords, arpeggios, pitch bends, controller changes, and multi-track output.
+
+Use MidiPlayerJS to **parse and play** MIDI files and MidiWriterJS to **generate** them.
+
+## Links
+
+- [npm](https://www.npmjs.com/package/midi-player-js)
+- [GitHub](https://github.com/grimmdude/MidiPlayerJS)
+- [Full API Documentation](http://grimmdude.com/MidiPlayerJS/docs/)

@@ -42,8 +42,14 @@
   },
   "keywords": [
     "midi",
+    "midi-file",
+    "midi-parser",
+    "midi-player",
     "parser",
-    "player"
+    "player",
+    "music",
+    "audio",
+    "smf"
   ],
   "author": "Garrett Grimm",
   "license": "MIT",

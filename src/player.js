@@ -22,7 +22,8 @@ class Player {
 		this.midiChunksByteLength = null;
 		this.division;
 		this.format;
-		this.setIntervalId = false;
+		this.setTimeoutId = false;
+		this.scheduledTime = 0;
 		this.tracks = [];
 		this.instruments = [];
 		this.defaultTempo = 120;
@@ -205,36 +206,37 @@ class Player {
 					this.triggerPlayerEvent('endOfFile');
 					this.stop();
 				} else {
-					let event = track.handleEvent(this.tick, dryRun);
+					let result = track.handleEvent(this.tick, dryRun);
 
-					if (dryRun && event) {
-						if (event.hasOwnProperty('name') && event.name === 'Set Tempo') {
+					if (dryRun && result) {
+						if (result.hasOwnProperty('name') && result.name === 'Set Tempo') {
 							// Grab tempo if available.
-							this.setTempo(event.data);
+							this.setTempo(result.data);
 						}
-						if (event.hasOwnProperty('name') && event.name === 'Program Change') {
-							if (!this.instruments.includes(event.value)) {
-								this.instruments.push(event.value);
+						if (result.hasOwnProperty('name') && result.name === 'Program Change') {
+							if (!this.instruments.includes(result.value)) {
+								this.instruments.push(result.value);
 							}
 						}
 
-					} else if (event) {
-						if (event.hasOwnProperty('name') && event.name === 'Set Tempo') {
-							// Grab tempo if available.
-							this.setTempo(event.data);
+					} else if (result) {
+						// result is an array of events during playback
+						let events = Array.isArray(result) ? result : [result];
 
-							if (this.isPlaying()) {
-								this.pause().play();
+						events.forEach(function(event) {
+							if (event.hasOwnProperty('name') && event.name === 'Set Tempo') {
+								// Grab tempo if available.
+								this.setTempo(event.data);
 							}
-						}
 
-						this.emitEvent(event);
+							this.emitEvent(event);
+						}, this);
 					}
 				}
 
 			}, this);
 
-			if (!dryRun) this.triggerPlayerEvent('playing', {tick: this.tick});
+			if (!dryRun && this.isPlaying()) this.triggerPlayerEvent('playing', {tick: this.tick});
 			this.inLoop = false;
 		}
 	}
@@ -268,22 +270,26 @@ class Player {
 		// Initialize
 		if (!this.startTime) this.startTime = (new Date()).getTime();
 
-		// Start play loop
-		//window.requestAnimationFrame(this.playLoop.bind(this));
-		this.setIntervalId = setInterval(this.playLoop.bind(this), this.sampleRate);
-		//this.setIntervalId = this.loop();
+		// Start play loop using drift-correcting setTimeout
+		this.scheduledTime = Date.now();
+		this.schedulePlayLoop(this.sampleRate);
 		return this;
 	}
 
-	loop() {
-		setTimeout(function () {
-	        // Do Something Here
-	        this.playLoop();
-
-	        // Then recall the parent function to
-	        // create a recursive loop.
-	        this.loop();
-	    }.bind(this), this.sampleRate);
+	/**
+	 * Schedules the next play loop iteration, correcting for timer drift.
+	 * @param {number} delay - Delay in milliseconds before next iteration.
+	 * @return {undefined}
+	 */
+	schedulePlayLoop(delay) {
+		this.setTimeoutId = setTimeout(() => {
+			this.playLoop();
+			if (this.setTimeoutId !== false) {
+				this.scheduledTime += this.sampleRate;
+				let drift = Date.now() - this.scheduledTime;
+				this.schedulePlayLoop(Math.max(0, this.sampleRate - drift));
+			}
+		}, delay);
 	}
 
 	/**
@@ -291,8 +297,9 @@ class Player {
 	 * @return {Player}
 	 */
 	pause() {
-		clearInterval(this.setIntervalId);
-		this.setIntervalId = false;
+		clearTimeout(this.setTimeoutId);
+		this.setTimeoutId = false;
+		this.scheduledTime = 0;
 		this.startTick = this.tick;
 		this.startTime = 0;
 		return this;
@@ -303,8 +310,9 @@ class Player {
 	 * @return {Player}
 	 */
 	stop() {
-		clearInterval(this.setIntervalId);
-		this.setIntervalId = false;
+		clearTimeout(this.setTimeoutId);
+		this.setTimeoutId = false;
+		this.scheduledTime = 0;
 		this.startTick = 0;
 		this.startTime = 0;
 		this.resetTracks();
@@ -328,11 +336,47 @@ class Player {
 			}
 		}
 
+		// Emit intermediate state-changing events so the consumer's synth is in the correct state
+		this.collectStateAtTick(tick).forEach(function(event) {
+			this.emitEvent(event);
+		}, this);
+
 		// Need to set track event indexes to the nearest possible event to the specified tick.
 		this.tracks.forEach(function(track) {
 			track.setEventIndexByTick(tick);
 		});
 		return this;
+	}
+
+	/**
+	 * Collects the last state-changing MIDI events (Program Change, Controller Change, Pitch Bend)
+	 * before the specified tick across all tracks.
+	 * @param {number} tick - Target tick to collect state up to.
+	 * @return {array} - Array of state events representing the MIDI state at the target tick.
+	 */
+	collectStateAtTick(tick) {
+		var dominated = {};
+
+		this.events.forEach(function(trackEvents) {
+			trackEvents.forEach(function(event) {
+				if (event.tick >= tick) return;
+
+				var key;
+				if (event.name === 'Program Change') {
+					key = 'pc:' + event.channel;
+				} else if (event.name === 'Controller Change') {
+					key = 'cc:' + event.channel + ':' + event.number;
+				} else if (event.name === 'Pitch Bend') {
+					key = 'pb:' + event.channel;
+				}
+
+				if (key) {
+					dominated[key] = event;
+				}
+			});
+		});
+
+		return Object.keys(dominated).map(function(key) { return dominated[key]; });
 	}
 
 	/**
@@ -363,7 +407,7 @@ class Player {
 	 * @return {boolean}
 	 */
 	isPlaying() {
-		return this.setIntervalId > 0 || typeof this.setIntervalId === 'object';
+		return this.setTimeoutId !== false;
 	}
 
 	/**
@@ -588,8 +632,10 @@ class Player {
 	 * @return {number}
 	 */
 	getCurrentTick() {
-		if(!this.startTime) return this.startTick;
-		return Math.round(((new Date()).getTime() - this.startTime) / 1000 * (this.division * (this.tempo / 60))) + this.startTick;
+		if (!this.startTime) return this.startTick;
+		var elapsedSeconds = ((new Date()).getTime() - this.startTime) / 1000;
+		var startSeconds = this.ticksToSeconds(0, this.startTick);
+		return this.secondsToTicks(startSeconds + elapsedSeconds);
 	}
 
 	/**
