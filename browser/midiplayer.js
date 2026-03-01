@@ -30,7 +30,7 @@ var MidiPlayer = (function () {
    * Constants used in player.
    */
   var Constants = {
-    VERSION: '2.0.16',
+    VERSION: '2.0.17',
     NOTES: [],
     HEADER_CHUNK_LENGTH: 14,
     CIRCLE_OF_FOURTHS: ['C', 'F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb', 'Cb', 'Fb', 'Bbb', 'Ebb', 'Abb'],
@@ -889,8 +889,8 @@ var MidiPlayer = (function () {
             // Handle next event
             if (!dryRun && this.endOfFile()) {
               //console.log('end of file')
-              this.triggerPlayerEvent('endOfFile');
               this.stop();
+              this.triggerPlayerEvent('endOfFile');
             } else {
               var result = track.handleEvent(this.tick, dryRun);
 
