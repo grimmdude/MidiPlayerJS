@@ -22,7 +22,8 @@ class Player {
 		this.midiChunksByteLength = null;
 		this.division;
 		this.format;
-		this.setIntervalId = false;
+		this.setTimeoutId = false;
+		this.scheduledTime = 0;
 		this.tracks = [];
 		this.instruments = [];
 		this.defaultTempo = 120;
@@ -269,22 +270,26 @@ class Player {
 		// Initialize
 		if (!this.startTime) this.startTime = (new Date()).getTime();
 
-		// Start play loop
-		//window.requestAnimationFrame(this.playLoop.bind(this));
-		this.setIntervalId = setInterval(this.playLoop.bind(this), this.sampleRate);
-		//this.setIntervalId = this.loop();
+		// Start play loop using drift-correcting setTimeout
+		this.scheduledTime = Date.now();
+		this.schedulePlayLoop(this.sampleRate);
 		return this;
 	}
 
-	loop() {
-		setTimeout(function () {
-	        // Do Something Here
-	        this.playLoop();
-
-	        // Then recall the parent function to
-	        // create a recursive loop.
-	        this.loop();
-	    }.bind(this), this.sampleRate);
+	/**
+	 * Schedules the next play loop iteration, correcting for timer drift.
+	 * @param {number} delay - Delay in milliseconds before next iteration.
+	 * @return {undefined}
+	 */
+	schedulePlayLoop(delay) {
+		this.setTimeoutId = setTimeout(() => {
+			this.playLoop();
+			if (this.setTimeoutId !== false) {
+				this.scheduledTime += this.sampleRate;
+				var drift = Date.now() - this.scheduledTime;
+				this.schedulePlayLoop(Math.max(0, this.sampleRate - drift));
+			}
+		}, delay);
 	}
 
 	/**
@@ -292,8 +297,8 @@ class Player {
 	 * @return {Player}
 	 */
 	pause() {
-		clearInterval(this.setIntervalId);
-		this.setIntervalId = false;
+		clearTimeout(this.setTimeoutId);
+		this.setTimeoutId = false;
 		this.startTick = this.tick;
 		this.startTime = 0;
 		return this;
@@ -304,8 +309,8 @@ class Player {
 	 * @return {Player}
 	 */
 	stop() {
-		clearInterval(this.setIntervalId);
-		this.setIntervalId = false;
+		clearTimeout(this.setTimeoutId);
+		this.setTimeoutId = false;
 		this.startTick = 0;
 		this.startTime = 0;
 		this.resetTracks();
@@ -400,7 +405,7 @@ class Player {
 	 * @return {boolean}
 	 */
 	isPlaying() {
-		return this.setIntervalId > 0 || typeof this.setIntervalId === 'object';
+		return this.setTimeoutId !== false;
 	}
 
 	/**
