@@ -226,10 +226,6 @@ class Player {
 							if (event.hasOwnProperty('name') && event.name === 'Set Tempo') {
 								// Grab tempo if available.
 								this.setTempo(event.data);
-
-								if (this.isPlaying()) {
-									this.pause().play();
-								}
 							}
 
 							this.emitEvent(event);
@@ -593,8 +589,10 @@ class Player {
 	 * @return {number}
 	 */
 	getCurrentTick() {
-		if(!this.startTime) return this.startTick;
-		return Math.round(((new Date()).getTime() - this.startTime) / 1000 * (this.division * (this.tempo / 60))) + this.startTick;
+		if (!this.startTime) return this.startTick;
+		var elapsedSeconds = ((new Date()).getTime() - this.startTime) / 1000;
+		var startSeconds = this.ticksToSeconds(0, this.startTick);
+		return this.secondsToTicks(startSeconds + elapsedSeconds);
 	}
 
 	/**
