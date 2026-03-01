@@ -203,8 +203,8 @@ class Player {
 				// Handle next event
 				if (!dryRun && this.endOfFile()) {
 					//console.log('end of file')
-					this.triggerPlayerEvent('endOfFile');
 					this.stop();
+					this.triggerPlayerEvent('endOfFile');
 				} else {
 					let result = track.handleEvent(this.tick, dryRun);
 
