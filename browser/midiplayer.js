@@ -997,6 +997,7 @@ var MidiPlayer = (function () {
       value: function pause() {
         clearTimeout(this.setTimeoutId);
         this.setTimeoutId = false;
+        this.scheduledTime = 0;
         this.startTick = this.tick;
         this.startTime = 0;
         return this;
@@ -1011,6 +1012,7 @@ var MidiPlayer = (function () {
       value: function stop() {
         clearTimeout(this.setTimeoutId);
         this.setTimeoutId = false;
+        this.scheduledTime = 0;
         this.startTick = 0;
         this.startTime = 0;
         this.resetTracks();

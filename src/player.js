@@ -286,7 +286,7 @@ class Player {
 			this.playLoop();
 			if (this.setTimeoutId !== false) {
 				this.scheduledTime += this.sampleRate;
-				var drift = Date.now() - this.scheduledTime;
+				let drift = Date.now() - this.scheduledTime;
 				this.schedulePlayLoop(Math.max(0, this.sampleRate - drift));
 			}
 		}, delay);
@@ -299,6 +299,7 @@ class Player {
 	pause() {
 		clearTimeout(this.setTimeoutId);
 		this.setTimeoutId = false;
+		this.scheduledTime = 0;
 		this.startTick = this.tick;
 		this.startTime = 0;
 		return this;
@@ -311,6 +312,7 @@ class Player {
 	stop() {
 		clearTimeout(this.setTimeoutId);
 		this.setTimeoutId = false;
+		this.scheduledTime = 0;
 		this.startTick = 0;
 		this.startTime = 0;
 		this.resetTracks();
