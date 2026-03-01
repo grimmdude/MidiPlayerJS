@@ -1031,13 +1031,50 @@ var MidiPlayer = (function () {
             this.setTempo(this.tempoMap[i].tempo);
             break;
           }
-        } // Need to set track event indexes to the nearest possible event to the specified tick.
+        } // Emit intermediate state-changing events so the consumer's synth is in the correct state
 
+
+        this.collectStateAtTick(tick).forEach(function (event) {
+          this.emitEvent(event);
+        }, this); // Need to set track event indexes to the nearest possible event to the specified tick.
 
         this.tracks.forEach(function (track) {
           track.setEventIndexByTick(tick);
         });
         return this;
+      }
+      /**
+       * Collects the last state-changing MIDI events (Program Change, Controller Change, Pitch Bend)
+       * before the specified tick across all tracks.
+       * @param {number} tick - Target tick to collect state up to.
+       * @return {array} - Array of state events representing the MIDI state at the target tick.
+       */
+
+    }, {
+      key: "collectStateAtTick",
+      value: function collectStateAtTick(tick) {
+        var dominated = {};
+        this.events.forEach(function (trackEvents) {
+          trackEvents.forEach(function (event) {
+            if (event.tick >= tick) return;
+            var key;
+
+            if (event.name === 'Program Change') {
+              key = 'pc:' + event.channel;
+            } else if (event.name === 'Controller Change') {
+              key = 'cc:' + event.channel + ':' + event.number;
+            } else if (event.name === 'Pitch Bend') {
+              key = 'pb:' + event.channel;
+            }
+
+            if (key) {
+              dominated[key] = event;
+            }
+          });
+        });
+        return Object.keys(dominated).map(function (key) {
+          return dominated[key];
+        });
       }
       /**
        * Skips player pointer to specified percentage.
