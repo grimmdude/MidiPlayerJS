@@ -455,6 +455,17 @@ class Player {
 	}
 
 	/**
+	 * Gets all Lyric events, optionally filtered to a specific track.
+	 * @param {number} [trackNumber] - Optional 1-based track number to filter by.
+	 * @return {array}
+	 */
+	getLyrics(trackNumber) {
+		return this.events
+			.flat()
+			.filter(e => e.name === 'Lyric' && (trackNumber == null || e.track === trackNumber));
+	}
+
+	/**
 	 * Gets total number of ticks in the loaded MIDI file.
 	 * @return {number}
 	 */
