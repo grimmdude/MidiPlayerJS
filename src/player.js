@@ -36,6 +36,7 @@ class Player {
 		this.events = [];
 		this.totalEvents = 0;
 		this.tempoMap = [];
+		this.loop = false;
 		this.eventListeners = {};
 
 		if (typeof(eventHandler) === 'function') this.on('midiEvent', eventHandler);
@@ -191,8 +192,9 @@ class Player {
 
 	/**
 	 * The main play loop.
-	 * @param {boolean} - Indicates whether or not this is being called simply for parsing purposes.  Disregards timing if so.
+	 * @param {boolean} dryRun - Indicates whether or not this is being called simply for parsing purposes.  Disregards timing if so.
 	 * @return {undefined}
+	 * @private
 	 */
 	playLoop(dryRun) {
 		if (!this.inLoop) {
@@ -202,9 +204,17 @@ class Player {
 			this.tracks.forEach(function(track, index) {
 				// Handle next event
 				if (!dryRun && this.endOfFile()) {
-					//console.log('end of file')
-					this.stop();
-					this.triggerPlayerEvent('endOfFile');
+					if (this.loop) {
+						this.resetTracks();
+						this.setTempo(this.defaultTempo);
+						this.startTick = 0;
+						this.startTime = (new Date()).getTime();
+						this.tick = 0;
+						this.triggerPlayerEvent('endOfFile');
+					} else {
+						this.stop();
+						this.triggerPlayerEvent('endOfFile');
+					}
 				} else {
 					let result = track.handleEvent(this.tick, dryRun);
 
