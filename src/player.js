@@ -201,24 +201,6 @@ class Player {
 			this.inLoop = true;
 			this.tick = this.getCurrentTick();
 
-			if (!dryRun && this.endOfFile()) {
-				if (this.loop) {
-					this.resetTracks();
-					this.setTempo(this.defaultTempo);
-					this.startTick = 0;
-					this.startTime = Date.now();
-					this.scheduledTime = Date.now();
-					this.tick = 0;
-					this.triggerPlayerEvent('endOfFile');
-				} else {
-					this.stop();
-					this.triggerPlayerEvent('endOfFile');
-				}
-
-				this.inLoop = false;
-				return;
-			}
-
 			this.tracks.forEach(function(track, index) {
 				let result = track.handleEvent(this.tick, dryRun);
 
@@ -248,6 +230,24 @@ class Player {
 				}
 
 			}, this);
+
+			if (!dryRun && this.endOfFile()) {
+				if (this.loop) {
+					this.resetTracks();
+					this.setTempo(this.defaultTempo);
+					this.startTick = 0;
+					this.startTime = Date.now();
+					this.scheduledTime = Date.now();
+					this.tick = 0;
+					this.triggerPlayerEvent('endOfFile');
+				} else {
+					this.stop();
+					this.triggerPlayerEvent('endOfFile');
+				}
+
+				this.inLoop = false;
+				return;
+			}
 
 			if (!dryRun && this.isPlaying()) this.triggerPlayerEvent('playing', {tick: this.tick});
 			this.inLoop = false;
