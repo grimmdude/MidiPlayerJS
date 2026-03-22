@@ -577,6 +577,39 @@ describe('MidiPlayerJS', function() {
 		});
 	});
 
+	describe('#final tick events', function () {
+		beforeEach(function() {
+			this.clock = sinon.useFakeTimers();
+			this.clock.tick(5000); // set start time
+		});
+		afterEach(function() {
+			sinon.restore();
+		});
+
+		it('should emit events at the final tick before endOfFile fires', function () {
+			// Note On C4 at tick 0, Note Off C4 at tick 96 (= totalTicks), then End of Track
+			var midi = buildMidi([
+				0x00, 0x90, 0x3C, 0x7F, // Note On C4 vel 127 at tick 0
+				0x60, 0x80, 0x3C, 0x00, // Note Off C4 at tick 96
+			].concat(EOT));
+			var events = [];
+			var endOfFileCount = 0;
+			var Player = new MidiPlayer.Player();
+			Player.on('midiEvent', function(event) { events.push(event); });
+			Player.on('endOfFile', function() { endOfFileCount++; });
+			Player.loadArrayBuffer(midi.buffer);
+			Player.play();
+
+			// Advance well past the song length
+			this.clock.tick(2000);
+
+			var noteOffEvents = events.filter(function(e) { return e.name === 'Note off'; });
+			assert.ok(noteOffEvents.length > 0, 'Note off at final tick should have been emitted');
+			assert.equal(noteOffEvents[0].tick, 96, 'Note off should be at the final tick');
+			assert.equal(endOfFileCount, 1, 'endOfFile should have fired');
+		});
+	});
+
 	describe('#loop', function () {
 		beforeEach(function() {
 			this.clock = sinon.useFakeTimers();
