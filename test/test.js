@@ -546,6 +546,62 @@ describe('MidiPlayerJS', function() {
 			assert.equal(Player.tempoMap[1].tempo, 200);
 		});
 
+	describe('#getLyrics()', function () {
+		it('should return all lyric events across all tracks', function () {
+			// Two Lyric events: "Hel-" at tick 0, "lo" at tick 96
+			// Lyric: FF 05 <len> <bytes>
+			var midi = buildMidi([
+				0x00, 0xFF, 0x05, 0x04, 0x48, 0x65, 0x6C, 0x2D, // "Hel-" at tick 0
+				0x60, 0xFF, 0x05, 0x02, 0x6C, 0x6F,             // "lo" at tick 96
+			].concat(EOT));
+			var Player = new MidiPlayer.Player();
+			Player.loadArrayBuffer(midi.buffer);
+			var lyrics = Player.getLyrics();
+			assert.equal(lyrics.length, 2);
+			assert.equal(lyrics[0].name, 'Lyric');
+			assert.equal(lyrics[0].string, 'Hel-');
+			assert.equal(lyrics[0].tick, 0);
+			assert.equal(lyrics[1].string, 'lo');
+			assert.equal(lyrics[1].tick, 96);
+		});
+
+		it('should return empty array when no lyric events exist', function () {
+			var midi = buildMidi([0x00, 0x90, 0x3C, 0x7F].concat(EOT));
+			var Player = new MidiPlayer.Player();
+			Player.loadArrayBuffer(midi.buffer);
+			assert.deepEqual(Player.getLyrics(), []);
+		});
+
+		it('should filter lyrics by track number', function () {
+			// Format 1 MIDI with two tracks, each with a Lyric event
+			var midi = new Uint8Array([
+				0x4D, 0x54, 0x68, 0x64,
+				0x00, 0x00, 0x00, 0x06,
+				0x00, 0x01,             // Format 1
+				0x00, 0x02,             // 2 tracks
+				0x00, 0x60,             // Division = 96
+				// Track 1: Lyric "A" (5 bytes) + EOT (4 bytes) = 9 bytes
+				0x4D, 0x54, 0x72, 0x6B,
+				0x00, 0x00, 0x00, 0x09,
+				0x00, 0xFF, 0x05, 0x01, 0x41, // "A" at tick 0
+				0x00, 0xFF, 0x2F, 0x00,
+				// Track 2: Lyric "B" (5 bytes) + EOT (4 bytes) = 9 bytes
+				0x4D, 0x54, 0x72, 0x6B,
+				0x00, 0x00, 0x00, 0x09,
+				0x00, 0xFF, 0x05, 0x01, 0x42, // "B" at tick 0
+				0x00, 0xFF, 0x2F, 0x00,
+			]);
+			var Player = new MidiPlayer.Player();
+			Player.loadArrayBuffer(midi.buffer);
+			var track1Lyrics = Player.getLyrics(1);
+			assert.equal(track1Lyrics.length, 1);
+			assert.equal(track1Lyrics[0].string, 'A');
+			var track2Lyrics = Player.getLyrics(2);
+			assert.equal(track2Lyrics.length, 1);
+			assert.equal(track2Lyrics[0].string, 'B');
+		});
+	});
+
 		it('should use default 120 BPM at tick 0 when no Set Tempo at tick 0 exists', function () {
 			// Format 1 MIDI with Set Tempo only at tick 480 (200 BPM)
 			var midi = new Uint8Array([
