@@ -619,7 +619,7 @@ describe('MidiPlayerJS', function() {
 			this.clock.tick(6);
 
 			// Even with multiple tracks, endOfFile should fire exactly once
-			assert.equal(endOfFileCount <= 1, true, 'endOfFile should fire at most once per loop iteration');
+			assert.equal(endOfFileCount, 1, 'endOfFile should fire exactly once per loop iteration');
 		});
 
 		it('should stop playback when loop is false (default)', function () {
