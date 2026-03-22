@@ -546,6 +546,37 @@ describe('MidiPlayerJS', function() {
 			assert.equal(Player.tempoMap[1].tempo, 200);
 		});
 
+		it('should use default 120 BPM at tick 0 when no Set Tempo at tick 0 exists', function () {
+			// Format 1 MIDI with Set Tempo only at tick 480 (200 BPM)
+			var midi = new Uint8Array([
+				// MThd
+				0x4D, 0x54, 0x68, 0x64,
+				0x00, 0x00, 0x00, 0x06,
+				0x00, 0x01,             // Format 1
+				0x00, 0x02,             // 2 tracks
+				0x01, 0xE0,             // Division = 480
+				// Track 1 (tempo track)
+				0x4D, 0x54, 0x72, 0x6B,
+				0x00, 0x00, 0x00, 0x0C, // 12 bytes
+				0x83, 0x60, 0xFF, 0x51, 0x03, 0x04, 0x93, 0xE0, // Set Tempo 200 BPM at tick 480
+				0x00, 0xFF, 0x2F, 0x00,
+				// Track 2 (empty)
+				0x4D, 0x54, 0x72, 0x6B,
+				0x00, 0x00, 0x00, 0x04,
+				0x00, 0xFF, 0x2F, 0x00,
+			]);
+			var Player = new MidiPlayer.Player();
+			Player.loadArrayBuffer(midi.buffer);
+
+			// Should have default 120 at tick 0, then 200 at tick 480
+			assert.equal(Player.tempoMap.length, 2);
+			assert.equal(Player.tempoMap[0].tick, 0);
+			assert.equal(Player.tempoMap[0].tempo, 120);
+			assert.equal(Player.tempoMap[1].tick, 480);
+			assert.equal(Player.tempoMap[1].tempo, 200);
+		});
+	});
+
 	describe('#getLyrics()', function () {
 		it('should return all lyric events across all tracks', function () {
 			// Two Lyric events: "Hel-" at tick 0, "lo" at tick 96
@@ -559,6 +590,7 @@ describe('MidiPlayerJS', function() {
 			var lyrics = Player.getLyrics();
 			assert.equal(lyrics.length, 2);
 			assert.equal(lyrics[0].name, 'Lyric');
+			assert.equal(lyrics[0].track, 1);
 			assert.equal(lyrics[0].string, 'Hel-');
 			assert.equal(lyrics[0].tick, 0);
 			assert.equal(lyrics[1].string, 'lo');
@@ -599,37 +631,6 @@ describe('MidiPlayerJS', function() {
 			var track2Lyrics = Player.getLyrics(2);
 			assert.equal(track2Lyrics.length, 1);
 			assert.equal(track2Lyrics[0].string, 'B');
-		});
-	});
-
-		it('should use default 120 BPM at tick 0 when no Set Tempo at tick 0 exists', function () {
-			// Format 1 MIDI with Set Tempo only at tick 480 (200 BPM)
-			var midi = new Uint8Array([
-				// MThd
-				0x4D, 0x54, 0x68, 0x64,
-				0x00, 0x00, 0x00, 0x06,
-				0x00, 0x01,             // Format 1
-				0x00, 0x02,             // 2 tracks
-				0x01, 0xE0,             // Division = 480
-				// Track 1 (tempo track)
-				0x4D, 0x54, 0x72, 0x6B,
-				0x00, 0x00, 0x00, 0x0C, // 12 bytes
-				0x83, 0x60, 0xFF, 0x51, 0x03, 0x04, 0x93, 0xE0, // Set Tempo 200 BPM at tick 480
-				0x00, 0xFF, 0x2F, 0x00,
-				// Track 2 (empty)
-				0x4D, 0x54, 0x72, 0x6B,
-				0x00, 0x00, 0x00, 0x04,
-				0x00, 0xFF, 0x2F, 0x00,
-			]);
-			var Player = new MidiPlayer.Player();
-			Player.loadArrayBuffer(midi.buffer);
-
-			// Should have default 120 at tick 0, then 200 at tick 480
-			assert.equal(Player.tempoMap.length, 2);
-			assert.equal(Player.tempoMap[0].tick, 0);
-			assert.equal(Player.tempoMap[0].tempo, 120);
-			assert.equal(Player.tempoMap[1].tick, 480);
-			assert.equal(Player.tempoMap[1].tempo, 200);
 		});
 	});
 });

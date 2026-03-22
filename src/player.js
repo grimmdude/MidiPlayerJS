@@ -455,7 +455,8 @@ class Player {
 	}
 
 	/**
-	 * Gets all Lyric events, optionally filtered to a specific track.
+	 * Gets all Lyric (FF 05) meta events, optionally filtered to a specific track.
+	 * Note: Some MIDI files store lyrics as Text (FF 01) events instead; those are not included here.
 	 * @param {number} [trackNumber] - Optional 1-based track number to filter by.
 	 * @return {array}
 	 */
