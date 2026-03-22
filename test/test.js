@@ -577,6 +577,68 @@ describe('MidiPlayerJS', function() {
 		});
 	});
 
+	describe('#loop', function () {
+		beforeEach(function() {
+			this.clock = sinon.useFakeTimers();
+			this.clock.tick(5000); // set start time
+		});
+		afterEach(function() {
+			sinon.restore();
+		});
+
+		it('should restart playback when loop is true and end of file is reached', function () {
+			var midi = buildMidi([
+				0x00, 0x90, 0x3C, 0x7F, // Note On at tick 0
+			].concat(EOT));
+			var endOfFileCount = 0;
+			var Player = new MidiPlayer.Player();
+			Player.on('endOfFile', function() { endOfFileCount++; });
+			Player.loadArrayBuffer(midi.buffer);
+			Player.loop = true;
+			Player.play();
+
+			// Advance enough for playback to reach end of file
+			this.clock.tick(500);
+
+			assert.ok(endOfFileCount >= 1, 'endOfFile should have fired at least once');
+			assert.ok(Player.isPlaying(), 'Player should still be playing after loop restart');
+		});
+
+		it('should fire endOfFile exactly once per loop iteration', function () {
+			var midi = buildMidi([
+				0x00, 0x90, 0x3C, 0x7F, // Note On at tick 0
+			].concat(EOT));
+			var endOfFileCount = 0;
+			var Player = new MidiPlayer.Player();
+			Player.on('endOfFile', function() { endOfFileCount++; });
+			Player.loadArrayBuffer(midi.buffer);
+			Player.loop = true;
+			Player.play();
+
+			// Advance just enough for one end-of-file
+			this.clock.tick(6);
+
+			// Even with multiple tracks, endOfFile should fire exactly once
+			assert.equal(endOfFileCount, 1, 'endOfFile should fire exactly once per loop iteration');
+		});
+
+		it('should stop playback when loop is false (default)', function () {
+			var midi = buildMidi([
+				0x00, 0x90, 0x3C, 0x7F, // Note On at tick 0
+			].concat(EOT));
+			var endOfFileCount = 0;
+			var Player = new MidiPlayer.Player();
+			Player.on('endOfFile', function() { endOfFileCount++; });
+			Player.loadArrayBuffer(midi.buffer);
+			Player.play();
+
+			this.clock.tick(500);
+
+			assert.equal(endOfFileCount, 1, 'endOfFile should fire once');
+			assert.ok(!Player.isPlaying(), 'Player should have stopped');
+		});
+	});
+
 	describe('#getLyrics()', function () {
 		it('should return all lyric events across all tracks', function () {
 			// Two Lyric events: "Hel-" at tick 0, "lo" at tick 96

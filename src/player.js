@@ -36,6 +36,7 @@ class Player {
 		this.events = [];
 		this.totalEvents = 0;
 		this.tempoMap = [];
+		this.loop = false;
 		this.eventListeners = {};
 
 		if (typeof(eventHandler) === 'function') this.on('midiEvent', eventHandler);
@@ -191,47 +192,59 @@ class Player {
 
 	/**
 	 * The main play loop.
-	 * @param {boolean} - Indicates whether or not this is being called simply for parsing purposes.  Disregards timing if so.
+	 * @param {boolean} dryRun - Indicates whether or not this is being called simply for parsing purposes.  Disregards timing if so.
 	 * @return {undefined}
+	 * @private
 	 */
 	playLoop(dryRun) {
 		if (!this.inLoop) {
 			this.inLoop = true;
 			this.tick = this.getCurrentTick();
 
-			this.tracks.forEach(function(track, index) {
-				// Handle next event
-				if (!dryRun && this.endOfFile()) {
-					//console.log('end of file')
-					this.stop();
+			if (!dryRun && this.endOfFile()) {
+				if (this.loop) {
+					this.resetTracks();
+					this.setTempo(this.defaultTempo);
+					this.startTick = 0;
+					this.startTime = Date.now();
+					this.scheduledTime = Date.now();
+					this.tick = 0;
 					this.triggerPlayerEvent('endOfFile');
 				} else {
-					let result = track.handleEvent(this.tick, dryRun);
+					this.stop();
+					this.triggerPlayerEvent('endOfFile');
+				}
 
-					if (dryRun && result) {
-						if (result.hasOwnProperty('name') && result.name === 'Set Tempo') {
-							// Grab tempo if available.
-							this.setTempo(result.data);
-						}
-						if (result.hasOwnProperty('name') && result.name === 'Program Change') {
-							if (!this.instruments.includes(result.value)) {
-								this.instruments.push(result.value);
-							}
-						}
+				this.inLoop = false;
+				return;
+			}
 
-					} else if (result) {
-						// result is an array of events during playback
-						let events = Array.isArray(result) ? result : [result];
+			this.tracks.forEach(function(track, index) {
+				let result = track.handleEvent(this.tick, dryRun);
 
-						events.forEach(function(event) {
-							if (event.hasOwnProperty('name') && event.name === 'Set Tempo') {
-								// Grab tempo if available.
-								this.setTempo(event.data);
-							}
-
-							this.emitEvent(event);
-						}, this);
+				if (dryRun && result) {
+					if (result.hasOwnProperty('name') && result.name === 'Set Tempo') {
+						// Grab tempo if available.
+						this.setTempo(result.data);
 					}
+					if (result.hasOwnProperty('name') && result.name === 'Program Change') {
+						if (!this.instruments.includes(result.value)) {
+							this.instruments.push(result.value);
+						}
+					}
+
+				} else if (result) {
+					// result is an array of events during playback
+					let events = Array.isArray(result) ? result : [result];
+
+					events.forEach(function(event) {
+						if (event.hasOwnProperty('name') && event.name === 'Set Tempo') {
+							// Grab tempo if available.
+							this.setTempo(event.data);
+						}
+
+						this.emitEvent(event);
+					}, this);
 				}
 
 			}, this);
@@ -268,7 +281,7 @@ class Player {
 		if (this.isPlaying()) throw 'Already playing...';
 
 		// Initialize
-		if (!this.startTime) this.startTime = (new Date()).getTime();
+		if (!this.startTime) this.startTime = Date.now();
 
 		// Start play loop using drift-correcting setTimeout
 		this.scheduledTime = Date.now();
