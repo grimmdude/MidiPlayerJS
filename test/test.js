@@ -576,4 +576,156 @@ describe('MidiPlayerJS', function() {
 			assert.equal(Player.tempoMap[1].tempo, 200);
 		});
 	});
+
+	describe('#final tick events', function () {
+		beforeEach(function() {
+			this.clock = sinon.useFakeTimers();
+			this.clock.tick(5000); // set start time
+		});
+		afterEach(function() {
+			sinon.restore();
+		});
+
+		it('should emit events at the final tick before endOfFile fires', function () {
+			// Note On C4 at tick 0, Note Off C4 at tick 96 (= totalTicks), then End of Track
+			var midi = buildMidi([
+				0x00, 0x90, 0x3C, 0x7F, // Note On C4 vel 127 at tick 0
+				0x60, 0x80, 0x3C, 0x00, // Note Off C4 at tick 96
+			].concat(EOT));
+			var events = [];
+			var endOfFileCount = 0;
+			var Player = new MidiPlayer.Player();
+			Player.on('midiEvent', function(event) { events.push(event); });
+			Player.on('endOfFile', function() { endOfFileCount++; });
+			Player.loadArrayBuffer(midi.buffer);
+			Player.play();
+
+			// Advance well past the song length
+			this.clock.tick(2000);
+
+			var noteOffEvents = events.filter(function(e) { return e.name === 'Note off'; });
+			assert.ok(noteOffEvents.length > 0, 'Note off at final tick should have been emitted');
+			assert.equal(noteOffEvents[0].tick, 96, 'Note off should be at the final tick');
+			assert.equal(endOfFileCount, 1, 'endOfFile should have fired');
+		});
+	});
+
+	describe('#loop', function () {
+		beforeEach(function() {
+			this.clock = sinon.useFakeTimers();
+			this.clock.tick(5000); // set start time
+		});
+		afterEach(function() {
+			sinon.restore();
+		});
+
+		it('should restart playback when loop is true and end of file is reached', function () {
+			var midi = buildMidi([
+				0x00, 0x90, 0x3C, 0x7F, // Note On at tick 0
+			].concat(EOT));
+			var endOfFileCount = 0;
+			var Player = new MidiPlayer.Player();
+			Player.on('endOfFile', function() { endOfFileCount++; });
+			Player.loadArrayBuffer(midi.buffer);
+			Player.loop = true;
+			Player.play();
+
+			// Advance enough for playback to reach end of file
+			this.clock.tick(500);
+
+			assert.ok(endOfFileCount >= 1, 'endOfFile should have fired at least once');
+			assert.ok(Player.isPlaying(), 'Player should still be playing after loop restart');
+		});
+
+		it('should fire endOfFile exactly once per loop iteration', function () {
+			var midi = buildMidi([
+				0x00, 0x90, 0x3C, 0x7F, // Note On at tick 0
+			].concat(EOT));
+			var endOfFileCount = 0;
+			var Player = new MidiPlayer.Player();
+			Player.on('endOfFile', function() { endOfFileCount++; });
+			Player.loadArrayBuffer(midi.buffer);
+			Player.loop = true;
+			Player.play();
+
+			// Advance just enough for one end-of-file
+			this.clock.tick(6);
+
+			// Even with multiple tracks, endOfFile should fire exactly once
+			assert.equal(endOfFileCount, 1, 'endOfFile should fire exactly once per loop iteration');
+		});
+
+		it('should stop playback when loop is false (default)', function () {
+			var midi = buildMidi([
+				0x00, 0x90, 0x3C, 0x7F, // Note On at tick 0
+			].concat(EOT));
+			var endOfFileCount = 0;
+			var Player = new MidiPlayer.Player();
+			Player.on('endOfFile', function() { endOfFileCount++; });
+			Player.loadArrayBuffer(midi.buffer);
+			Player.play();
+
+			this.clock.tick(500);
+
+			assert.equal(endOfFileCount, 1, 'endOfFile should fire once');
+			assert.ok(!Player.isPlaying(), 'Player should have stopped');
+		});
+	});
+
+	describe('#getLyrics()', function () {
+		it('should return all lyric events across all tracks', function () {
+			// Two Lyric events: "Hel-" at tick 0, "lo" at tick 96
+			// Lyric: FF 05 <len> <bytes>
+			var midi = buildMidi([
+				0x00, 0xFF, 0x05, 0x04, 0x48, 0x65, 0x6C, 0x2D, // "Hel-" at tick 0
+				0x60, 0xFF, 0x05, 0x02, 0x6C, 0x6F,             // "lo" at tick 96
+			].concat(EOT));
+			var Player = new MidiPlayer.Player();
+			Player.loadArrayBuffer(midi.buffer);
+			var lyrics = Player.getLyrics();
+			assert.equal(lyrics.length, 2);
+			assert.equal(lyrics[0].name, 'Lyric');
+			assert.equal(lyrics[0].track, 1);
+			assert.equal(lyrics[0].string, 'Hel-');
+			assert.equal(lyrics[0].tick, 0);
+			assert.equal(lyrics[1].string, 'lo');
+			assert.equal(lyrics[1].tick, 96);
+		});
+
+		it('should return empty array when no lyric events exist', function () {
+			var midi = buildMidi([0x00, 0x90, 0x3C, 0x7F].concat(EOT));
+			var Player = new MidiPlayer.Player();
+			Player.loadArrayBuffer(midi.buffer);
+			assert.deepEqual(Player.getLyrics(), []);
+		});
+
+		it('should filter lyrics by track number', function () {
+			// Format 1 MIDI with two tracks, each with a Lyric event
+			var midi = new Uint8Array([
+				0x4D, 0x54, 0x68, 0x64,
+				0x00, 0x00, 0x00, 0x06,
+				0x00, 0x01,             // Format 1
+				0x00, 0x02,             // 2 tracks
+				0x00, 0x60,             // Division = 96
+				// Track 1: Lyric "A" (5 bytes) + EOT (4 bytes) = 9 bytes
+				0x4D, 0x54, 0x72, 0x6B,
+				0x00, 0x00, 0x00, 0x09,
+				0x00, 0xFF, 0x05, 0x01, 0x41, // "A" at tick 0
+				0x00, 0xFF, 0x2F, 0x00,
+				// Track 2: Lyric "B" (5 bytes) + EOT (4 bytes) = 9 bytes
+				0x4D, 0x54, 0x72, 0x6B,
+				0x00, 0x00, 0x00, 0x09,
+				0x00, 0xFF, 0x05, 0x01, 0x42, // "B" at tick 0
+				0x00, 0xFF, 0x2F, 0x00,
+			]);
+			var Player = new MidiPlayer.Player();
+			Player.loadArrayBuffer(midi.buffer);
+			var track1Lyrics = Player.getLyrics(1);
+			assert.equal(track1Lyrics.length, 1);
+			assert.equal(track1Lyrics[0].string, 'A');
+			var track2Lyrics = Player.getLyrics(2);
+			assert.equal(track2Lyrics.length, 1);
+			assert.equal(track2Lyrics[0].string, 'B');
+		});
+	});
 });

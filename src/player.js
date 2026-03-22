@@ -36,6 +36,7 @@ class Player {
 		this.events = [];
 		this.totalEvents = 0;
 		this.tempoMap = [];
+		this.loop = false;
 		this.eventListeners = {};
 
 		if (typeof(eventHandler) === 'function') this.on('midiEvent', eventHandler);
@@ -191,8 +192,9 @@ class Player {
 
 	/**
 	 * The main play loop.
-	 * @param {boolean} - Indicates whether or not this is being called simply for parsing purposes.  Disregards timing if so.
+	 * @param {boolean} dryRun - Indicates whether or not this is being called simply for parsing purposes.  Disregards timing if so.
 	 * @return {undefined}
+	 * @private
 	 */
 	playLoop(dryRun) {
 		if (!this.inLoop) {
@@ -200,41 +202,52 @@ class Player {
 			this.tick = this.getCurrentTick();
 
 			this.tracks.forEach(function(track, index) {
-				// Handle next event
-				if (!dryRun && this.endOfFile()) {
-					//console.log('end of file')
-					this.stop();
-					this.triggerPlayerEvent('endOfFile');
-				} else {
-					let result = track.handleEvent(this.tick, dryRun);
+				let result = track.handleEvent(this.tick, dryRun);
 
-					if (dryRun && result) {
-						if (result.hasOwnProperty('name') && result.name === 'Set Tempo') {
-							// Grab tempo if available.
-							this.setTempo(result.data);
-						}
-						if (result.hasOwnProperty('name') && result.name === 'Program Change') {
-							if (!this.instruments.includes(result.value)) {
-								this.instruments.push(result.value);
-							}
-						}
-
-					} else if (result) {
-						// result is an array of events during playback
-						let events = Array.isArray(result) ? result : [result];
-
-						events.forEach(function(event) {
-							if (event.hasOwnProperty('name') && event.name === 'Set Tempo') {
-								// Grab tempo if available.
-								this.setTempo(event.data);
-							}
-
-							this.emitEvent(event);
-						}, this);
+				if (dryRun && result) {
+					if (result.hasOwnProperty('name') && result.name === 'Set Tempo') {
+						// Grab tempo if available.
+						this.setTempo(result.data);
 					}
+					if (result.hasOwnProperty('name') && result.name === 'Program Change') {
+						if (!this.instruments.includes(result.value)) {
+							this.instruments.push(result.value);
+						}
+					}
+
+				} else if (result) {
+					// result is an array of events during playback
+					let events = Array.isArray(result) ? result : [result];
+
+					events.forEach(function(event) {
+						if (event.hasOwnProperty('name') && event.name === 'Set Tempo') {
+							// Grab tempo if available.
+							this.setTempo(event.data);
+						}
+
+						this.emitEvent(event);
+					}, this);
 				}
 
 			}, this);
+
+			if (!dryRun && this.endOfFile()) {
+				if (this.loop) {
+					this.resetTracks();
+					this.setTempo(this.defaultTempo);
+					this.startTick = 0;
+					this.startTime = Date.now();
+					this.scheduledTime = Date.now();
+					this.tick = 0;
+					this.triggerPlayerEvent('endOfFile');
+				} else {
+					this.stop();
+					this.triggerPlayerEvent('endOfFile');
+				}
+
+				this.inLoop = false;
+				return;
+			}
 
 			if (!dryRun && this.isPlaying()) this.triggerPlayerEvent('playing', {tick: this.tick});
 			this.inLoop = false;
@@ -268,7 +281,7 @@ class Player {
 		if (this.isPlaying()) throw 'Already playing...';
 
 		// Initialize
-		if (!this.startTime) this.startTime = (new Date()).getTime();
+		if (!this.startTime) this.startTime = Date.now();
 
 		// Start play loop using drift-correcting setTimeout
 		this.scheduledTime = Date.now();
@@ -452,6 +465,18 @@ class Player {
 	 */
 	getEvents() {
 		return this.tracks.map(track => track.events);
+	}
+
+	/**
+	 * Gets all Lyric (FF 05) meta events, optionally filtered to a specific track.
+	 * Note: Some MIDI files store lyrics as Text (FF 01) events instead; those are not included here.
+	 * @param {number} [trackNumber] - Optional 1-based track number to filter by.
+	 * @return {array}
+	 */
+	getLyrics(trackNumber) {
+		return this.events
+			.flat()
+			.filter(e => e.name === 'Lyric' && (trackNumber == null || e.track === trackNumber));
 	}
 
 	/**
